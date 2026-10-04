@@ -1,15 +1,14 @@
+import "server-only";
+
 // Server-side configuration.
 //
-// Secret values are read in this file and nowhere else, and they are never
-// returned to the browser. Other code asks whether a secret is set, never
-// what it is.
+// Secret values are read in this file and nowhere else. Only the server-side
+// integration modules (memberstack-server.ts, and later the Claude client)
+// receive them, through requireSecret(). Nothing returns a secret to the
+// browser, logs it, or stores it.
 
 import { BASE_PATH } from "./paths";
-
-// The Memberstack public key is safe to commit: it ships in page source.
-// This is the sandbox (test mode) key. At launch, set
-// NEXT_PUBLIC_MEMBERSTACK_PUBLIC_KEY to the live key in Webflow Cloud.
-const SANDBOX_MEMBERSTACK_PUBLIC_KEY = "pk_sb_65b31d81606f719c1a57";
+import { memberstackMode } from "./public-config";
 
 export const SECRET_NAMES = ["ANTHROPIC_API_KEY", "MEMBERSTACK_SECRET_KEY"] as const;
 export type SecretName = (typeof SECRET_NAMES)[number];
@@ -20,12 +19,13 @@ export function hasSecret(name: SecretName): boolean {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-export function memberstackPublicKey(): string {
-  return process.env.NEXT_PUBLIC_MEMBERSTACK_PUBLIC_KEY || SANDBOX_MEMBERSTACK_PUBLIC_KEY;
-}
-
-export function memberstackMode(): "sandbox" | "live" {
-  return memberstackPublicKey().startsWith("pk_sb_") ? "sandbox" : "live";
+/** The secret's value, for integration modules only. Throws if missing. */
+export function requireSecret(name: SecretName): string {
+  const value = process.env[name]?.trim();
+  if (!value) {
+    throw new Error(`${name} is not set`);
+  }
+  return value;
 }
 
 export type SetupCheck = {
@@ -34,7 +34,7 @@ export type SetupCheck = {
   detail: string;
 };
 
-/** The Phase 0 deployment checks, shown on the status page and /api/health. */
+/** Configuration checks, shown on /app/status and /app/api/health. */
 export function setupChecks(): SetupCheck[] {
   const anthropic = hasSecret("ANTHROPIC_API_KEY");
   const memberstack = hasSecret("MEMBERSTACK_SECRET_KEY");

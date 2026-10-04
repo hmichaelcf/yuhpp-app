@@ -1,47 +1,46 @@
-import { setupChecks } from "@/lib/config";
-import { appPath } from "@/lib/paths";
+import { redirect } from "next/navigation";
+import Masthead from "./components/Masthead";
+import { currentMember } from "@/lib/session";
 
-// Render on each request so the checks reflect the live environment.
+// Signed-in home. Becomes the dashboard in later phases.
 export const dynamic = "force-dynamic";
 
-export default function Home() {
-  const checks = setupChecks();
+const COMING = [
+  { phase: "Phase 2", text: "Onboarding: your direction, resume, and story bank." },
+  { phase: "Phase 3", text: "Your jobs: constraint check, Match Meter, and applying." },
+  { phase: "Phase 4", text: "Interviews: a prep stack for each round type." },
+  { phase: "Phase 5", text: "Your weekly review and the practice loop." },
+];
+
+export default async function Home() {
+  const member = await currentMember();
+  if (!member) {
+    redirect("/login");
+  }
 
   return (
     <>
-      <header className="masthead">
-        <div className="masthead-in">
-          <p className="wordmark">
-            Yuhpp <span className="bar">|</span> The Job Search System
-          </p>
-          <span className="tag">App</span>
-        </div>
-      </header>
-
+      <Masthead signedIn />
       <main className="page">
-        <p className="eyebrow">Coming soon</p>
+        <p className="eyebrow">Signed in</p>
         <h1 className="title">
-          Your whole search, <em>in one place.</em>
+          Welcome to <em>your workspace.</em>
         </h1>
         <p className="lede">
-          The Yuhpp app is under construction. Soon you will sign in, add the jobs you are
-          going after, and run every step of the method here, with your work saved as you
-          go.
+          You are signed in as <strong>{member.email ?? "a Yuhpp member"}</strong>. Your
+          account is ready; the workspace fills in over the next phases.
         </p>
 
-        <p className="section-label">Deployment checks</p>
+        <p className="section-label">What is coming</p>
         <ul className="checks">
-          {checks.map((check) => (
-            <li key={check.label} className={check.ok ? "check ok" : "check"}>
+          {COMING.map((item) => (
+            <li key={item.phase} className="check pending">
               <span className="dot" aria-hidden="true" />
-              <span className="label">{check.label}</span>
-              <span className="detail">{check.detail}</span>
+              <span className="label">{item.phase}</span>
+              <span className="detail">{item.text}</span>
             </li>
           ))}
         </ul>
-        <p className="note">
-          Machine-readable status: <a href={appPath("/api/health")}>{appPath("/api/health")}</a>
-        </p>
       </main>
     </>
   );

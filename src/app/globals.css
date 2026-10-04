@@ -186,8 +186,148 @@ a {
   margin: 0;
 }
 
+.check.pending .dot {
+  border-color: var(--rule);
+  background: transparent;
+}
+.check.pending .detail {
+  color: var(--ink-2);
+  text-align: left;
+  font-family: var(--sans);
+  font-size: 14.5px;
+}
+.check.pending {
+  grid-template-columns: 14px 96px 1fr;
+}
+
+/* ---------- masthead actions ---------- */
+.masthead-actions {
+  margin-left: auto;
+}
+
+/* ---------- buttons ---------- */
+button {
+  font: inherit;
+  cursor: pointer;
+}
+button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.primary-button {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  background: var(--main);
+  color: #fff;
+  border: 0;
+  border-radius: 2px;
+  padding: 13px 20px;
+  width: 100%;
+}
+.text-button {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  background: none;
+  border: 0;
+  padding: 6px 0;
+}
+.text-button:hover {
+  color: var(--main);
+}
+
+/* ---------- sign in ---------- */
+.page.narrow {
+  max-width: 520px;
+}
+.auth {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+}
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid var(--rule);
+}
+.auth-tab {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: 15px 10px 13px;
+}
+.auth-tab.on {
+  color: var(--ink);
+  border-bottom-color: var(--main);
+}
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.field span {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.field input {
+  font: inherit;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: 11px 12px;
+}
+.field input:focus {
+  outline: none;
+  border-color: var(--main);
+}
+.consents {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.check-row {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 10px;
+  align-items: start;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.check-row input {
+  margin: 4px 0 0;
+  accent-color: var(--main);
+}
+.form-error {
+  margin: 0;
+  font-size: 14px;
+  color: var(--stop);
+  background: var(--stop-soft);
+  border-left: 2px solid var(--stop);
+  padding: 10px 12px;
+}
+
 @media (max-width: 600px) {
-  .check {
+  .check,
+  .check.pending {
     grid-template-columns: 14px 1fr;
   }
   .check .detail {

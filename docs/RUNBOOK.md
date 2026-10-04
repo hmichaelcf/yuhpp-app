@@ -5,9 +5,21 @@ and ask it to help with any of these.
 
 ## Check that the app is healthy
 
-Open yuhpp.com/app/api/health. `"status": "ready"` means the app is deployed,
-the mount path is set, and both secrets are set. `"waiting_for_secrets"` means
-something is missing; the status page at yuhpp.com/app shows which.
+Open yuhpp.com/app/status for a readable view, or yuhpp.com/app/api/health for
+JSON. `"status": "ready"` means the app is deployed, configured, and its
+database and session store are working. Anything else, and the status page
+shows which check failed.
+
+## Sign-in is not working
+
+1. Open yuhpp.com/app/status. Every row should be teal.
+2. If the sign-in form says "temporarily unavailable", Memberstack either
+   could not be reached or rejected the secret key. In Webflow Cloud, open the
+   app's **Runtime logs** and look for "Memberstack verify-token returned HTTP".
+   401 or 403 means `MEMBERSTACK_SECRET_KEY` is wrong: copy it again from
+   Memberstack's Dev Tools page (test mode key while in sandbox).
+3. The public key and the secret key must come from the same mode: both test
+   (`pk_sb_` and `sk_sb_`) or both live.
 
 ## Deploy a change
 

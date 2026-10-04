@@ -1,0 +1,21 @@
+{
+  "main": ".open-next/worker.js",
+  "name": "yuhpp-app",
+  "compatibility_date": "2025-04-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "yuhpp",
+      "database_id": "0",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "kv_namespaces": [
+    { "binding": "SESSIONS", "id": "local-sessions" }
+  ]
+}

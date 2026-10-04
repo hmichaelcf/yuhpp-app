@@ -12,12 +12,15 @@
     "node": ">=22"
   },
   "dependencies": {
+    "@memberstack/dom": "^2.0.14",
     "@opennextjs/cloudflare": "^1.19.10",
     "next": "^16.2.6",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261004.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
