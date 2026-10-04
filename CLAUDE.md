@@ -17,11 +17,13 @@ https://claude.ai/code/artifact/ec5dc14b-50cc-4241-945a-872c330beb3e
 - **Phase 1 (current), in three pieces:**
   1. Storage and login (done): SQLite and the session store, sign-up and
      sign-in at /app/login, signed-in home at /app, status at /app/status.
-  2. Admin page and prompt sync (done in code): /app/admin, gated by the
+  2. Admin page and prompt sync (done): /app/admin, gated by the
      `ADMIN_EMAILS` variable; CSV upload of the sheet adds, versions, and
      retires prompts in one transaction.
-  3. Chat engine, run caps, and cost tracking (next). Phase 1 exit: any
-     prompt runs end to end with its cost logged.
+  3. Chat engine (done in code): prompt picker at /app/prompts, runs at
+     /app/run/[id] with streamed replies, monthly run cap and turn cap,
+     token usage and cost recorded on every turn. Phase 1 exit: any prompt
+     runs end to end with its cost logged.
 - Later phases: onboarding, application loop, interview loop, weekly review and
   practice, beta launch. See the build spec.
 
@@ -48,8 +50,19 @@ https://claude.ai/code/artifact/ec5dc14b-50cc-4241-945a-872c330beb3e
   HttpOnly `yuhpp_session` cookie. The cookie holds only a random id; the
   member id lives in the SESSIONS key-value store for 7 days
   (`src/lib/session.ts`). Server code gets the member with `currentMember()`.
-- **Claude API:** called only from server code. Sonnet 5.5 runs prompts;
-  Haiku 4.5 extracts structured results.
+- **Claude API:** called only from server code (`src/lib/claude.ts`), with
+  streaming, automatic prompt caching, and the web search tool for prompts
+  whose instructions mention web search (`wantsWebSearch()` in
+  `src/lib/frame.ts`). Citations become a Sources list at the end of the reply.
+  A paused long turn (`pause_turn`) is continued automatically. The model and
+  its prices are rows in `settings` (`run_model`, `price_*`), so changing them
+  needs no code change.
+- **Runs:** `/app/api/runs` starts a run; `/app/api/runs/[id]/messages`
+  stores the member's message, wraps the prompt body in the Yuhpp frame
+  (`buildSystem()` in `src/lib/frame.ts`), streams the reply as plain text,
+  then stores it with tokens and cost. Errors before any text arrive are sent
+  as a `\0ERROR:<code>` marker and the member's message is removed so a retry
+  is clean. A run counts toward the monthly cap once it has one turn.
 - **Storage:** Webflow Cloud SQLite (binding `DB`) for workspace data, and
   key-value (binding `SESSIONS`) for sessions. Declared in `wrangler.json`;
   access them through `bindings()` in `src/lib/cloudflare.ts`. Object storage
@@ -86,6 +99,7 @@ https://claude.ai/code/artifact/ec5dc14b-50cc-4241-945a-872c330beb3e
 | `MEMBERSTACK_SECRET_KEY` | Yes | Memberstack secret key |
 | `NEXT_PUBLIC_BASE_PATH` | No | The mount path, `/app`. Webflow Cloud does not reliably provide it at build time, and plain links and `fetch()` need it. |
 | `ADMIN_EMAILS` | No | Comma-separated emails that get the admin page. Kept out of the code so no personal email lives in the repo. |
+| `ANTHROPIC_API_BASE` | No | Local testing only: points the app at a stand-in for the Claude API. Never set it in Webflow Cloud. |
 | `NEXT_PUBLIC_MEMBERSTACK_PUBLIC_KEY` | No | Optional; falls back to the sandbox key in `src/lib/config.ts`. Set to the live key at launch. |
 
 Set them in Webflow Cloud > the environment > Environment Variables, with
@@ -122,15 +136,23 @@ src/app/                pages and API routes (App Router)
   login/page.tsx        /app/login: sign in and create account
   status/page.tsx       /app/status: configuration and storage checks
   admin/page.tsx        /app/admin: usage, prompt sync, settings (admins only)
+  prompts/page.tsx      /app/prompts: pick a prompt and start a run
+  run/[id]/page.tsx     /app/run/[id]: the chat for one run
   api/health/           /app/api/health: the same checks as JSON
   api/session/          /app/api/session: POST starts a session, DELETE ends it
   api/admin/prompts/    /app/api/admin/prompts: CSV upload (admins only)
-  components/           Masthead, AuthForm, SignOutButton, PromptUpload
+  api/runs/             start a run; [id]/messages streams a turn; [id]/close
+  components/           Masthead, AuthForm, SignOutButton, PromptUpload,
+                        StartRunButton, ChatView
   globals.css           design tokens shared with the public guide
 src/lib/
   config.ts             the only place secrets are read (server only)
   public-config.ts      browser-safe values (Memberstack public key)
   admin.ts              isAdmin(), requireAdminPage(), adminFromRequest()
+  claude.ts             streams a turn from the Claude API, computes cost
+  frame.ts              the Yuhpp system frame around every prompt
+  runs.ts               runs and messages, always scoped to the member
+  settings.ts           reads the settings table
   cloudflare.ts         bindings() for DB and SESSIONS, storage checks
   csv.ts                CSV reader for the sheet export
   prompts.ts            read the sheet, sync and version prompts (server only)

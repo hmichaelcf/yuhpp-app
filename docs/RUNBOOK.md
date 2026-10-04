@@ -22,6 +22,25 @@ shows which check failed.
 Renaming a prompt in the sheet counts as retiring the old name and adding a
 new one, so its version history starts over.
 
+## Prompt runs are failing
+
+- **Every prompt fails with "rejected the app's key":** `ANTHROPIC_API_KEY` is
+  wrong or was deleted in the Anthropic Console. Create a new key, replace it in
+  Webflow Cloud, and click **Deploy latest commit**.
+- **Only research prompts fail** (Interview Intel Brief, Company Fit Crafter,
+  and others that use web search): web search may be switched off for your
+  Anthropic organization. Check platform.claude.com/settings/capabilities.
+- **"Busy right now":** the AI service is overloaded or rate limited. Wait and
+  retry. If it keeps happening, check the Console's usage limits.
+- For anything else, open the app's **Runtime logs** in Webflow Cloud and look
+  for lines starting "Claude API returned HTTP".
+
+## Change the run cap, model, or prices
+
+These live in the `settings` table (visible on the Admin page). Ask Claude Code
+to change one; it adds a small migration that updates the row, and the change
+applies on the next deploy.
+
 ## Give someone admin access
 
 Add their email to `ADMIN_EMAILS` in Webflow Cloud (comma-separated, e.g.
