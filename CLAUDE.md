@@ -15,11 +15,13 @@ https://claude.ai/code/artifact/ec5dc14b-50cc-4241-945a-872c330beb3e
 
 - **Phase 0 (done):** deployed at yuhpp.com/app with all checks passing.
 - **Phase 1 (current), in three pieces:**
-  1. Storage and login (done in code): SQLite and the session store, sign-up
-     and sign-in at /app/login, signed-in home at /app, status at /app/status.
-  2. Admin page and prompt sync by CSV upload (next).
-  3. Chat engine, run caps, and cost tracking. Phase 1 exit: any prompt runs
-     end to end with its cost logged.
+  1. Storage and login (done): SQLite and the session store, sign-up and
+     sign-in at /app/login, signed-in home at /app, status at /app/status.
+  2. Admin page and prompt sync (done in code): /app/admin, gated by the
+     `ADMIN_EMAILS` variable; CSV upload of the sheet adds, versions, and
+     retires prompts in one transaction.
+  3. Chat engine, run caps, and cost tracking (next). Phase 1 exit: any
+     prompt runs end to end with its cost logged.
 - Later phases: onboarding, application loop, interview loop, weekly review and
   practice, beta launch. See the build spec.
 
@@ -83,6 +85,7 @@ https://claude.ai/code/artifact/ec5dc14b-50cc-4241-945a-872c330beb3e
 | `ANTHROPIC_API_KEY` | Yes | Anthropic Console API key |
 | `MEMBERSTACK_SECRET_KEY` | Yes | Memberstack secret key |
 | `NEXT_PUBLIC_BASE_PATH` | No | The mount path, `/app`. Webflow Cloud does not reliably provide it at build time, and plain links and `fetch()` need it. |
+| `ADMIN_EMAILS` | No | Comma-separated emails that get the admin page. Kept out of the code so no personal email lives in the repo. |
 | `NEXT_PUBLIC_MEMBERSTACK_PUBLIC_KEY` | No | Optional; falls back to the sandbox key in `src/lib/config.ts`. Set to the live key at launch. |
 
 Set them in Webflow Cloud > the environment > Environment Variables, with
@@ -106,7 +109,8 @@ Local development uses `.env.local` (copy `.env.example`; never commit it).
    facts, or testimonials.
 6. **Member scoping:** every database query that reads member data filters by
    the member id from `currentMember()` (a verified session), never from the
-   request.
+   request. The one exception is the admin page's site-wide totals, which are
+   admin-only and say so in a comment.
 7. **Thresholds are data:** gate thresholds, run caps, and exception caps live
    in the `settings` table, not as constants in code.
 
@@ -117,14 +121,19 @@ src/app/                pages and API routes (App Router)
   page.tsx              /app: signed-in home (redirects to /login if signed out)
   login/page.tsx        /app/login: sign in and create account
   status/page.tsx       /app/status: configuration and storage checks
+  admin/page.tsx        /app/admin: usage, prompt sync, settings (admins only)
   api/health/           /app/api/health: the same checks as JSON
   api/session/          /app/api/session: POST starts a session, DELETE ends it
-  components/           Masthead, AuthForm, SignOutButton
+  api/admin/prompts/    /app/api/admin/prompts: CSV upload (admins only)
+  components/           Masthead, AuthForm, SignOutButton, PromptUpload
   globals.css           design tokens shared with the public guide
 src/lib/
   config.ts             the only place secrets are read (server only)
   public-config.ts      browser-safe values (Memberstack public key)
+  admin.ts              isAdmin(), requireAdminPage(), adminFromRequest()
   cloudflare.ts         bindings() for DB and SESSIONS, storage checks
+  csv.ts                CSV reader for the sheet export
+  prompts.ts            read the sheet, sync and version prompts (server only)
   memberstack-server.ts verify tokens, fetch member email (server only)
   memberstack-client.ts load Memberstack in the browser
   members.ts            member rows

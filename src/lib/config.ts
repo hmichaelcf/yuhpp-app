@@ -28,6 +28,17 @@ export function requireSecret(name: SecretName): string {
   return value;
 }
 
+/**
+ * Admin emails from the ADMIN_EMAILS variable (comma-separated). Not a
+ * secret, but kept out of the code so no personal email lives in the repo.
+ */
+export function adminEmails(): string[] {
+  return (process.env.ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter((e) => e.includes("@"));
+}
+
 export type SetupCheck = {
   label: string;
   ok: boolean;
@@ -66,6 +77,14 @@ export function setupChecks(): SetupCheck[] {
       label: "Memberstack mode",
       ok: true,
       detail: memberstackMode() === "sandbox" ? "Sandbox (test mode)" : "Live",
+    },
+    {
+      label: "Admin access",
+      ok: adminEmails().length > 0,
+      detail:
+        adminEmails().length > 0
+          ? `${adminEmails().length} admin email${adminEmails().length === 1 ? "" : "s"} set`
+          : "Missing: add ADMIN_EMAILS",
     },
   ];
 }

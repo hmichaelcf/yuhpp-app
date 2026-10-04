@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import Masthead from "./components/Masthead";
+import { isAdmin } from "@/lib/admin";
 import { currentMember } from "@/lib/session";
 
 // Signed-in home. Becomes the dashboard in later phases.
@@ -20,7 +21,7 @@ export default async function Home() {
 
   return (
     <>
-      <Masthead signedIn />
+      <Masthead signedIn admin={isAdmin(member)} />
       <main className="page">
         <p className="eyebrow">Signed in</p>
         <h1 className="title">

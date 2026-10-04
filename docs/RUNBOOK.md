@@ -10,6 +10,23 @@ JSON. `"status": "ready"` means the app is deployed, configured, and its
 database and session store are working. Anything else, and the status page
 shows which check failed.
 
+## Sync the prompt library after editing the sheet
+
+1. Open the `yuhpp_prompts` Google Sheet and choose
+   **File > Download > Comma Separated Values (.csv)**.
+2. Sign in at yuhpp.com/app, click **Admin** at the top, and upload that file
+   under Prompt library.
+3. The result lists what was added, updated, and retired. Edited prompts get a
+   new version; the old version is kept. If the file is wrong, nothing changes.
+
+Renaming a prompt in the sheet counts as retiring the old name and adding a
+new one, so its version history starts over.
+
+## Give someone admin access
+
+Add their email to `ADMIN_EMAILS` in Webflow Cloud (comma-separated, e.g.
+`a@example.com,b@example.com`), then click **Deploy latest commit**.
+
 ## Sign-in is not working
 
 1. Open yuhpp.com/app/status. Every row should be teal.
