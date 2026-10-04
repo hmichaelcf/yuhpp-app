@@ -1,0 +1,26 @@
+# dependencies
+/node_modules
+
+# next.js and the Cloudflare build Webflow Cloud runs
+/.next/
+/out/
+/.open-next/
+/.wrangler/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+
+# env files: secrets never go in the repo. .env.example is the only exception.
+.env*
+!.env.example
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
