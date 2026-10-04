@@ -66,11 +66,16 @@ https://claude.ai/code/artifact/ec5dc14b-50cc-4241-945a-872c330beb3e
   its prices are rows in `settings` (`run_model`, `price_*`), so changing them
   needs no code change.
 - **Runs:** `/app/api/runs` starts a run; `/app/api/runs/[id]/messages`
-  stores the member's message, wraps the prompt body in the Yuhpp frame
-  (`buildSystem()` in `src/lib/frame.ts`), streams the reply as plain text,
-  then stores it with tokens and cost. Errors before any text arrive are sent
-  as a `\0ERROR:<code>` marker and the member's message is removed so a retry
-  is clean. A run counts toward the monthly cap once it has one turn.
+  wraps the prompt body in the Yuhpp frame (`buildSystem()` in
+  `src/lib/frame.ts`) and streams the reply. The stream format is in
+  `src/lib/stream-protocol.ts`: reply text plus control characters for a
+  keepalive (every 5 seconds), status lines ("Searching the web: ..."), an
+  error marker, and a done marker. **Webflow Cloud drops a response that is
+  silent for 20 seconds**, so any long-running route must keep sending bytes
+  (the resume upload does the same with leading spaces before its JSON). The
+  member's message and the reply are saved together only once the reply
+  finishes, so a failed or abandoned turn leaves nothing behind. A run counts
+  toward the monthly cap once it has one turn.
 - **Storage:** Webflow Cloud SQLite (binding `DB`) for workspace data, and
   key-value (binding `SESSIONS`) for sessions. Declared in `wrangler.json`;
   access them through `bindings()` in `src/lib/cloudflare.ts`. No object
@@ -107,6 +112,8 @@ https://claude.ai/code/artifact/ec5dc14b-50cc-4241-945a-872c330beb3e
   a new one instead. Test locally with
   `npx wrangler d1 migrations apply DB --local`.
 - Environment variable changes only take effect on the next deploy.
+- A response that sends nothing for 20 seconds is dropped. Stream anything
+  slow and send a byte at least every few seconds.
 
 ## Environment variables
 
@@ -183,6 +190,7 @@ src/lib/
   members.ts            member rows
   session.ts            create, read, and end sessions
   paths.ts              appPath(): mount-path prefix for <a> and fetch()
+  stream-protocol.ts    the streamed reply format, shared by server and browser
 migrations/             numbered SQL migrations, applied on deploy
 wrangler.json           storage bindings
 docs/RUNBOOK.md         how to deploy, change keys, roll back, fix sign-in

@@ -3,21 +3,38 @@ import { bindings } from "@/lib/cloudflare";
 import { ClaudeError, streamTurn, turnCost } from "@/lib/claude";
 import { buildSystem, wantsWebSearch } from "@/lib/frame";
 import {
-  addMessage,
-  deleteMessage,
   getRun,
   promptBodyForRun,
   recordTurn,
   runMessages,
   runsUsedThisMonth,
+  saveExchange,
 } from "@/lib/runs";
 import { currentResume, savedOnDate } from "@/lib/resumes";
 import { currentMember } from "@/lib/session";
 import { loadSettings } from "@/lib/settings";
+import { DONE, ERROR_PREFIX, KEEPALIVE, clean, statusLine } from "@/lib/stream-protocol";
 
 export const dynamic = "force-dynamic";
 
 const MAX_MESSAGE_CHARS = 60_000;
+// Webflow Cloud drops a response that sends nothing for 20 seconds, and a
+// research turn can search for longer than that before it writes, so a
+// keepalive byte goes out this often for as long as the turn runs.
+const KEEPALIVE_MS = 5_000;
+
+type Turn = { role: "user" | "assistant"; content: string };
+
+/** Joins back-to-back messages from the same side, which older runs can hold. */
+function mergeTurns(turns: Turn[]): Turn[] {
+  const out: Turn[] = [];
+  for (const t of turns) {
+    const last = out[out.length - 1];
+    if (last && last.role === t.role) last.content = `${last.content}\n\n${t.content}`;
+    else out.push({ ...t });
+  }
+  return out;
+}
 
 /**
  * POST /app/api/runs/:id/messages  { content }
@@ -67,14 +84,12 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
     new Date(),
     resume ? { text: resume.text, savedOn: savedOnDate(resume.created_at) } : null,
   );
-  const userMessageId = await addMessage(DB, run.id, "user", content);
-  const messages = [
+  const messages = mergeTurns([
     ...history.map((m) => ({ role: m.role, content: m.content })),
-    { role: "user" as const, content },
-  ];
+    { role: "user", content },
+  ]);
 
   const encoder = new TextEncoder();
-  let opened = false;
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -85,6 +100,10 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
           // The browser went away; keep going so the reply is still saved.
         }
       };
+      // First byte right away, then a keepalive every few seconds.
+      send(KEEPALIVE);
+      const keepalive = setInterval(() => send(KEEPALIVE), KEEPALIVE_MS);
+
       let streamed = "";
       try {
         const result = await streamTurn({
@@ -95,15 +114,16 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
           webSearch: wantsWebSearch(promptBody),
           maxSearches: settings.number("max_searches_per_run", 5),
           onText: (t) => {
-            opened = true;
-            streamed += t;
-            send(t);
+            const text = clean(t);
+            streamed += text;
+            send(text);
           },
+          onStatus: (status) => send(statusLine(status)),
         });
 
-        let reply = result.text;
+        let reply = clean(result.text);
         if (result.sources.length > 0) {
-          const list = result.sources.map((s) => `- [${s.title}](${s.url})`).join("\n");
+          const list = result.sources.map((s) => `- [${clean(s.title)}](${s.url})`).join("\n");
           const tail = `\n\n**Sources**\n${list}`;
           reply += tail;
           send(tail);
@@ -114,7 +134,8 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
           send(tail);
         }
 
-        await addMessage(DB, run.id, "assistant", reply);
+        await saveExchange(DB, run.id, content, reply);
+        send(DONE);
         await recordTurn(DB, run.id, {
           ...result.usage,
           cost: turnCost(result.usage, {
@@ -127,17 +148,18 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
         });
       } catch (e) {
         const code = e instanceof ClaudeError ? e.code : "upstream_error";
-        if (!opened) {
-          // Nothing reached the member: undo their message so a retry is clean.
-          await deleteMessage(DB, userMessageId).catch(() => undefined);
-          send(`\u0000ERROR:${code}`);
+        if (!(e instanceof ClaudeError)) console.error("Prompt run failed:", e);
+        if (!streamed) {
+          // Nothing reached the member and nothing was saved, so a retry is clean.
+          send(`${ERROR_PREFIX}${code}`);
         } else {
           // Part of a reply arrived: keep it, mark it, and let them continue.
           const tail = "\n\n*The reply was cut off. Send \"continue\" to pick up where it stopped.*";
-          send(tail);
-          await addMessage(DB, run.id, "assistant", streamed + tail).catch(() => undefined);
+          await saveExchange(DB, run.id, content, streamed + tail).catch(() => undefined);
+          send(tail + DONE);
         }
       } finally {
+        clearInterval(keepalive);
         try {
           controller.close();
         } catch {
@@ -149,7 +171,8 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
 
   return new Response(stream, {
     headers: {
-      "Content-Type": "text/plain; charset=utf-8",
+      // event-stream tells proxies not to buffer or compress the reply.
+      "Content-Type": "text/event-stream; charset=utf-8",
       "Cache-Control": "no-store",
       "X-Accel-Buffering": "no",
     },

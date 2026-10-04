@@ -32,8 +32,11 @@ new one, so its version history starts over.
   Anthropic organization. Check platform.claude.com/settings/capabilities.
 - **"Busy right now":** the AI service is overloaded or rate limited. Wait and
   retry. If it keeps happening, check the Console's usage limits.
+- **"The connection dropped before the reply finished":** the browser lost the
+  connection mid-reply (a network blip, a laptop going to sleep). Refresh the
+  run page; if the reply did not finish, send the message again.
 - For anything else, open the app's **Runtime logs** in Webflow Cloud and look
-  for lines starting "Claude API returned HTTP".
+  for lines starting "Claude API returned HTTP" or "Prompt run failed".
 
 ## A member's resume did not read correctly
 

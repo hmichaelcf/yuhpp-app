@@ -91,6 +91,8 @@ export async function streamTurn(opts: {
   webSearch: boolean;
   maxSearches: number;
   onText: (text: string) => void;
+  /** What the model is doing while no text is coming, e.g. a web search. */
+  onStatus?: (status: string) => void;
 }): Promise<TurnResult> {
   const conversation = [...opts.messages];
   const usage: TurnUsage = { input: 0, output: 0, cacheWrite: 0, cacheRead: 0, searches: 0 };
@@ -139,6 +141,8 @@ export async function streamTurn(opts: {
           break;
         case "content_block_start":
           blocks[index] = { ...(ev.content_block as Block) };
+          if (blocks[index].type === "server_tool_use") opts.onStatus?.("Searching the web");
+          if (blocks[index].type === "web_search_tool_result") opts.onStatus?.("Reading what it found");
           break;
         case "content_block_delta": {
           const delta = ev.delta as Block;
@@ -169,6 +173,10 @@ export async function streamTurn(opts: {
               blocks[index].input = JSON.parse(json || "{}");
             } catch {
               blocks[index].input = {};
+            }
+            const query = (blocks[index].input as { query?: unknown }).query;
+            if (blocks[index].type === "server_tool_use" && typeof query === "string" && query) {
+              opts.onStatus?.(`Searching the web: ${query}`);
             }
           }
           break;

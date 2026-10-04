@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { appPath } from "@/lib/paths";
+import { parseStream } from "@/lib/stream-protocol";
 
 type Message = { role: "user" | "assistant"; content: string };
 
@@ -54,6 +55,7 @@ export default function ChatView({
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState("");
   const bottom = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -88,22 +90,44 @@ export default function ChatView({
       }
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
-      let reply = "";
-      for (;;) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        reply += decoder.decode(value, { stream: true });
-        if (reply.startsWith("\u0000ERROR:")) continue;
-        const text = reply;
-        setMessages((m) => [...m.slice(0, -1), { role: "assistant", content: text }]);
+      let raw = "";
+      let shown = "";
+      try {
+        for (;;) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          raw += decoder.decode(value, { stream: true });
+          const parsed = parseStream(raw);
+          if (parsed.error) continue;
+          setStatus(parsed.status);
+          if (parsed.text !== shown) {
+            shown = parsed.text;
+            const text = shown;
+            setMessages((m) => [...m.slice(0, -1), { role: "assistant", content: text }]);
+          }
+        }
+      } catch {
+        // Reading failed partway; handled below like any unfinished reply.
       }
-      if (reply.startsWith("\u0000ERROR:")) {
-        fail(reply.slice("\u0000ERROR:".length).trim());
+      const parsed = parseStream(raw);
+      if (parsed.error) {
+        fail(parsed.error);
+      } else if (!parsed.done) {
+        // The connection was cut before the reply finished.
+        if (!parsed.text) {
+          fail("upstream_error");
+        } else {
+          setDraft(content);
+          setError(
+            "The connection dropped before the reply finished. Refresh the page in a minute to see whether it completed. If it did not, send your message again.",
+          );
+        }
       }
     } catch {
       fail("upstream_error");
     } finally {
       setBusy(false);
+      setStatus("");
     }
   }
 
@@ -135,13 +159,16 @@ export default function ChatView({
         {messages.map((m, i) => (
           <div key={i} className={`bubble ${m.role}`}>
             {m.role === "assistant" ? (
-              m.content ? (
-                <div className="md">
-                  <Markdown text={m.content} />
-                </div>
-              ) : (
-                <p className="thinking">Working on it</p>
-              )
+              <>
+                {m.content ? (
+                  <div className="md">
+                    <Markdown text={m.content} />
+                  </div>
+                ) : null}
+                {busy && i === messages.length - 1 && (status || !m.content) ? (
+                  <p className="thinking">{status || "Working on it"}</p>
+                ) : null}
+              </>
             ) : (
               <p className="user-text">{m.content}</p>
             )}

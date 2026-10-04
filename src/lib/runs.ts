@@ -105,21 +105,22 @@ export async function promptBodyForRun(db: D1Database, promptId: number): Promis
   return row?.body ?? null;
 }
 
-export async function addMessage(
+/**
+ * Saves the member's message and the reply together, once the reply is done.
+ * A turn that never finishes (an error, or the browser leaving) saves nothing,
+ * so the run never holds a question without its answer.
+ */
+export async function saveExchange(
   db: D1Database,
   runId: string,
-  role: "user" | "assistant",
-  content: string,
-): Promise<number> {
-  const res = await db
-    .prepare("INSERT INTO messages (run_id, role, content) VALUES (?1, ?2, ?3)")
-    .bind(runId, role, content)
-    .run();
-  return Number(res.meta.last_row_id);
-}
-
-export async function deleteMessage(db: D1Database, messageId: number): Promise<void> {
-  await db.prepare("DELETE FROM messages WHERE id = ?1").bind(messageId).run();
+  userText: string,
+  replyText: string,
+): Promise<void> {
+  const insert = "INSERT INTO messages (run_id, role, content) VALUES (?1, ?2, ?3)";
+  await db.batch([
+    db.prepare(insert).bind(runId, "user", userText),
+    db.prepare(insert).bind(runId, "assistant", replyText),
+  ]);
 }
 
 export async function recordTurn(

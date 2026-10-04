@@ -39,8 +39,9 @@ export default function ResumeForm({ hasResume }: { hasResume: boolean }) {
     }
     try {
       const res = await fetch(appPath("/api/profile/resume"), { method: "POST", body });
-      const data = (await res.json().catch(() => ({}))) as { message?: string };
-      if (!res.ok) {
+      // The body may start with keepalive spaces; JSON parsing ignores them.
+      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; message?: string };
+      if (!res.ok || !data.ok) {
         setError(data.message ?? "Your resume could not be saved. Please try again.");
         return;
       }

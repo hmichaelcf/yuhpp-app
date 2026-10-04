@@ -51,37 +51,80 @@ export async function POST(request: Request) {
       );
     }
   }
-  try {
-    const read = await readResume(
-      { file: hasFile ? (file as File) : null, pasted: hasText ? (pasted as string) : null },
-      settings,
-      (usage) =>
-        logApiUsage(DB, {
-          memberId: member.id,
-          purpose: "resume_pdf",
-          model: usage.model,
-          inputTokens: usage.inputTokens,
-          outputTokens: usage.outputTokens,
-          cost:
-            (usage.inputTokens * settings.number("price_extract_input_per_mtok", 1) +
-              usage.outputTokens * settings.number("price_extract_output_per_mtok", 5)) /
-            1_000_000,
-        }),
-    );
-    await saveResume(DB, member.id, read);
-    return NextResponse.json({ ok: true, chars: read.text.length });
-  } catch (e) {
-    if (e instanceof ResumeProblem) {
-      return NextResponse.json({ error: "unreadable", message: e.message }, { status: 422 });
-    }
-    if (e instanceof ClaudeError) {
-      return NextResponse.json(
-        { error: e.code, message: "The PDF could not be read right now. Try again, or upload a Word file." },
-        { status: 502 },
+  const work = async (): Promise<Record<string, unknown>> => {
+    try {
+      const read = await readResume(
+        { file: hasFile ? (file as File) : null, pasted: hasText ? (pasted as string) : null },
+        settings,
+        (usage) =>
+          logApiUsage(DB, {
+            memberId: member.id,
+            purpose: "resume_pdf",
+            model: usage.model,
+            inputTokens: usage.inputTokens,
+            outputTokens: usage.outputTokens,
+            cost:
+              (usage.inputTokens * settings.number("price_extract_input_per_mtok", 1) +
+                usage.outputTokens * settings.number("price_extract_output_per_mtok", 5)) /
+              1_000_000,
+          }),
       );
+      await saveResume(DB, member.id, read);
+      return { ok: true, chars: read.text.length };
+    } catch (e) {
+      if (e instanceof ResumeProblem) return { error: "unreadable", message: e.message };
+      if (e instanceof ClaudeError) {
+        return {
+          error: e.code,
+          message: "The PDF could not be read right now. Try again, or upload a Word file.",
+        };
+      }
+      console.error("Resume save failed:", e);
+      return { error: "failed", message: "Your resume could not be saved. Please try again." };
     }
-    throw e;
-  }
+  };
+
+  return keepAliveJson(work);
+}
+
+/**
+ * Reading a PDF can take longer than the 20 seconds Webflow Cloud allows a
+ * silent response, so the result is streamed: a space right away and every
+ * few seconds while the work runs (JSON ignores leading whitespace), then
+ * the JSON. The status is always 200; the body's "ok" says how it went.
+ */
+function keepAliveJson(work: () => Promise<Record<string, unknown>>): Response {
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const send = (text: string) => {
+        try {
+          controller.enqueue(encoder.encode(text));
+        } catch {
+          // The browser went away; finish the work anyway.
+        }
+      };
+      send(" ");
+      const timer = setInterval(() => send(" "), 5_000);
+      try {
+        send(JSON.stringify(await work()));
+      } finally {
+        clearInterval(timer);
+        try {
+          controller.close();
+        } catch {
+          // already closed
+        }
+      }
+    },
+  });
+  return new Response(stream, {
+    headers: {
+      // event-stream tells proxies not to buffer the keepalive spaces.
+      "Content-Type": "text/event-stream; charset=utf-8",
+      "Cache-Control": "no-store",
+    },
+  });
 }
 
 /** DELETE /app/api/profile/resume  removes every saved version. */
