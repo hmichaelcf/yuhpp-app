@@ -4,6 +4,8 @@
 // returned to the browser. Other code asks whether a secret is set, never
 // what it is.
 
+import { BASE_PATH } from "./paths";
+
 // The Memberstack public key is safe to commit: it ships in page source.
 // This is the sandbox (test mode) key. At launch, set
 // NEXT_PUBLIC_MEMBERSTACK_PUBLIC_KEY to the live key in Webflow Cloud.
@@ -36,7 +38,20 @@ export type SetupCheck = {
 export function setupChecks(): SetupCheck[] {
   const anthropic = hasSecret("ANTHROPIC_API_KEY");
   const memberstack = hasSecret("MEMBERSTACK_SECRET_KEY");
+  // Locally the app runs at the root, so an empty base path is correct there.
+  // Deployed, it must match the mount path or plain links and fetch() break.
+  const local = process.env.NODE_ENV === "development";
+  const mountOk = local ? true : BASE_PATH.startsWith("/") && BASE_PATH.length > 1;
   return [
+    {
+      label: "Mount path",
+      ok: mountOk,
+      detail: BASE_PATH
+        ? BASE_PATH
+        : local
+          ? "/ (local development)"
+          : "Missing: add NEXT_PUBLIC_BASE_PATH=/app",
+    },
     {
       label: "Anthropic API key",
       ok: anthropic,

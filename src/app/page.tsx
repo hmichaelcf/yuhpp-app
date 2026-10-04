@@ -1,18 +1,11 @@
 import { setupChecks } from "@/lib/config";
-import { BASE_PATH, appPath } from "@/lib/paths";
+import { appPath } from "@/lib/paths";
 
 // Render on each request so the checks reflect the live environment.
 export const dynamic = "force-dynamic";
 
 export default function Home() {
-  const checks = [
-    {
-      label: "Served at the mount path",
-      ok: BASE_PATH === "/app" || BASE_PATH === "",
-      detail: BASE_PATH ? BASE_PATH : "/ (local development)",
-    },
-    ...setupChecks(),
-  ];
+  const checks = setupChecks();
 
   return (
     <>

@@ -5,11 +5,13 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   // Next.js prefixes <Link>, <Image> and the router with the mount path
-  // automatically, but not fetch(). This exposes the mount path to client
-  // code so fetch calls to our own API routes can prefix it.
-  // See src/lib/paths.ts.
+  // automatically, but not fetch() or plain <a> tags. This exposes the mount
+  // path to code so those can prefix it (see src/lib/paths.ts).
+  // Webflow Cloud does not always provide COSMIC_MOUNT_PATH at build time, so
+  // NEXT_PUBLIC_BASE_PATH=/app is also set in the environment's variables,
+  // as Webflow's configuration docs recommend.
   env: {
-    NEXT_PUBLIC_BASE_PATH: process.env.COSMIC_MOUNT_PATH || "",
+    NEXT_PUBLIC_BASE_PATH: process.env.COSMIC_MOUNT_PATH || process.env.NEXT_PUBLIC_BASE_PATH || "",
   },
 };
 

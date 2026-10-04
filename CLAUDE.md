@@ -59,11 +59,12 @@ https://claude.ai/code/artifact/ec5dc14b-50cc-4241-945a-872c330beb3e
 | --- | --- | --- |
 | `ANTHROPIC_API_KEY` | Yes | Anthropic Console API key |
 | `MEMBERSTACK_SECRET_KEY` | Yes | Memberstack secret key |
+| `NEXT_PUBLIC_BASE_PATH` | No | The mount path, `/app`. Webflow Cloud does not reliably provide it at build time, and plain links and `fetch()` need it. |
 | `NEXT_PUBLIC_MEMBERSTACK_PUBLIC_KEY` | No | Optional; falls back to the sandbox key in `src/lib/config.ts`. Set to the live key at launch. |
 
 Set them in Webflow Cloud > the environment > Environment Variables, with
-Secret toggled on for the secret ones. Local development uses `.env.local`
-(copy `.env.example`; never commit it).
+Secret toggled on for the secret ones, then click **Deploy latest commit**.
+Local development uses `.env.local` (copy `.env.example`; never commit it).
 
 ## Product rules (never break these)
 
