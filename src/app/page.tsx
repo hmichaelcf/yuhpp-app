@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Masthead from "./components/Masthead";
 import { isAdmin } from "@/lib/admin";
 import { bindings } from "@/lib/cloudflare";
+import { currentResume, savedOnDate, sourceLabel } from "@/lib/resumes";
 import { recentRuns, runsUsedThisMonth } from "@/lib/runs";
 import { currentMember } from "@/lib/session";
 import { loadSettings } from "@/lib/settings";
@@ -11,7 +12,7 @@ import { loadSettings } from "@/lib/settings";
 export const dynamic = "force-dynamic";
 
 const COMING = [
-  { phase: "Phase 2", text: "Onboarding: your direction, resume, and story bank." },
+  { phase: "Phase 2", text: "Onboarding: your direction, positioning, and story bank." },
   { phase: "Phase 3", text: "Your jobs: constraint check, Match Meter, and applying." },
   { phase: "Phase 4", text: "Interviews: a prep stack for each round type." },
   { phase: "Phase 5", text: "Your weekly review and the practice loop." },
@@ -32,10 +33,11 @@ export default async function Home() {
   }
 
   const { DB } = await bindings();
-  const [settings, used, runs] = await Promise.all([
+  const [settings, used, runs, resume] = await Promise.all([
     loadSettings(DB),
     runsUsedThisMonth(DB, member.id),
     recentRuns(DB, member.id),
+    currentResume(DB, member.id),
   ]);
   const cap = settings.number("run_cap_monthly", 75);
   const left = Math.max(cap - used, 0);
@@ -60,6 +62,23 @@ export default async function Home() {
             Run a prompt
           </Link>
         </p>
+
+        <section className="admin-block">
+          <p className="section-label">Your profile</p>
+          <ul className="checks">
+            <li className={resume ? "check ok" : "check pending"}>
+              <span className="dot" aria-hidden="true" />
+              <span className="label">
+                <Link href="/profile">Resume</Link>
+              </span>
+              <span className="detail">
+                {resume
+                  ? `Saved ${savedOnDate(resume.created_at)}, ${sourceLabel(resume.source)}. Prompts read it automatically.`
+                  : "Not added yet. Add it once and every prompt can use it."}
+              </span>
+            </li>
+          </ul>
+        </section>
 
         {runs.length > 0 ? (
           <section className="admin-block">

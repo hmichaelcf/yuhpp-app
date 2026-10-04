@@ -20,7 +20,18 @@ async function usage(db: D1Database) {
        FROM runs WHERE created_at >= datetime('now', 'start of month')`,
     )
     .first<{ runs: number; cost: number }>();
-  return { members: members?.n ?? 0, runs: month?.runs ?? 0, cost: month?.cost ?? 0 };
+  // Calls outside prompt runs, such as reading uploaded resume PDFs.
+  const other = await db
+    .prepare(
+      `SELECT COALESCE(SUM(cost_usd), 0) AS cost
+       FROM api_usage WHERE created_at >= datetime('now', 'start of month')`,
+    )
+    .first<{ cost: number }>();
+  return {
+    members: members?.n ?? 0,
+    runs: month?.runs ?? 0,
+    cost: (month?.cost ?? 0) + (other?.cost ?? 0),
+  };
 }
 
 function formatDate(sqlite: string): string {

@@ -680,3 +680,67 @@ a.link-button {
     text-align: left;
   }
 }
+
+/* ---------- profile ---------- */
+.mode-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid var(--rule);
+  margin: -18px -20px 0;
+}
+.form-hint {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.upload input[type="file"] {
+  font-size: 14px;
+  color: var(--ink-2);
+  max-width: 100%;
+}
+.paste-box {
+  font: inherit;
+  font-size: 14.5px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 12px 14px;
+  resize: vertical;
+  min-height: 220px;
+}
+.paste-box:focus {
+  outline: none;
+  border-color: var(--main);
+}
+.resume-preview {
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 16px 18px;
+  margin: 0;
+  max-height: 520px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.resume-note {
+  font-size: 14px;
+  color: var(--ink-2);
+  margin: -6px 0 22px;
+}
+.resume-note a {
+  color: var(--main);
+}
+.masthead-actions .text-button {
+  white-space: nowrap;
+}
+@media (max-width: 600px) {
+  .masthead-actions {
+    gap: 12px;
+  }
+}

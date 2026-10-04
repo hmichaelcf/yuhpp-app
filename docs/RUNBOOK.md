@@ -35,9 +35,24 @@ new one, so its version history starts over.
 - For anything else, open the app's **Runtime logs** in Webflow Cloud and look
   for lines starting "Claude API returned HTTP".
 
+## A member's resume did not read correctly
+
+- The Profile page shows the exact text Yuhpp read. If a PDF came out garbled
+  or empty (common with scanned or image-only PDFs), have them upload the Word
+  file or paste the text instead.
+- "Does not look like a resume" means the PDF reader decided the file was
+  something else. A Word file or pasted text skips that check.
+- "Uploaded several PDFs today" is the daily limit (`resume_pdf_reads_daily`,
+  10 by default). Pasting or a Word file still works.
+- If every PDF fails with "could not be read right now", check the Runtime
+  logs for lines starting "Claude API returned HTTP ... reading a PDF".
+- Removing a resume on the Profile page deletes every saved version. Uploaded
+  files are never stored, so there is nothing else to delete.
+
 ## Change the run cap, model, or prices
 
-These live in the `settings` table (visible on the Admin page). Ask Claude Code
+These live in the `settings` table (visible on the Admin page), along with the
+resume limits and the model that reads PDFs (`extract_model`). Ask Claude Code
 to change one; it adds a small migration that updates the row, and the change
 applies on the next deploy.
 

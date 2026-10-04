@@ -226,3 +226,77 @@ export function turnCost(
     usage.cacheRead * prices.cacheRead;
   return perToken / 1_000_000 + usage.searches * prices.search;
 }
+
+const NOT_A_RESUME = "NOT_A_RESUME";
+
+function base64(bytes: Uint8Array): string {
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+/**
+ * Reads a resume PDF into plain text with a small model. The PDF is sent
+ * once and not kept; only the text comes back. Returns null text when the
+ * document is not a resume.
+ */
+export async function transcribeResumePdf(
+  bytes: Uint8Array,
+  model: string,
+): Promise<{ text: string | null; cutOff: boolean; inputTokens: number; outputTokens: number }> {
+  const res = await fetch(`${API_BASE}/v1/messages`, {
+    method: "POST",
+    headers: {
+      "x-api-key": requireSecret("ANTHROPIC_API_KEY"),
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 6000,
+      system:
+        "You transcribe resumes. Output the complete text of the attached document as clean markdown: " +
+        "every section, name, job title, company, date, bullet, and number exactly as written. " +
+        "Do not summarize, rewrite, correct, reorder, or add anything, and add no commentary. " +
+        `If the document is clearly not a resume or CV, output exactly ${NOT_A_RESUME} and nothing else.`,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "document",
+              source: { type: "base64", media_type: "application/pdf", data: base64(bytes) },
+            },
+            { type: "text", text: "Transcribe this document." },
+          ],
+        },
+      ],
+    }),
+  }).catch(() => null);
+
+  if (!res) throw new ClaudeError("upstream_error", "Claude could not be reached");
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    console.error(`Claude API returned HTTP ${res.status} reading a PDF: ${detail.slice(0, 300)}`);
+    throw new ClaudeError(codeFor(res.status), `Claude returned ${res.status}`);
+  }
+  const body = (await res.json()) as {
+    content?: { type: string; text?: string }[];
+    stop_reason?: string;
+    usage?: { input_tokens?: number; output_tokens?: number };
+  };
+  const text = (body.content ?? [])
+    .filter((b) => b.type === "text")
+    .map((b) => b.text ?? "")
+    .join("")
+    .trim();
+  return {
+    text: text === NOT_A_RESUME || !text ? null : text,
+    cutOff: body.stop_reason === "max_tokens",
+    inputTokens: body.usage?.input_tokens ?? 0,
+    outputTokens: body.usage?.output_tokens ?? 0,
+  };
+}

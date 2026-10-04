@@ -4,6 +4,7 @@ import ChatView from "../../components/ChatView";
 import Masthead from "../../components/Masthead";
 import { isAdmin } from "@/lib/admin";
 import { bindings } from "@/lib/cloudflare";
+import { currentResume, savedOnDate } from "@/lib/resumes";
 import { getRun, runMessages } from "@/lib/runs";
 import { currentMember } from "@/lib/session";
 
@@ -19,7 +20,10 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
   const { DB } = await bindings();
   const run = await getRun(DB, id, member.id);
   if (!run) notFound();
-  const messages = await runMessages(DB, run.id);
+  const [messages, resume] = await Promise.all([
+    runMessages(DB, run.id),
+    currentResume(DB, member.id),
+  ]);
 
   return (
     <>
@@ -29,6 +33,19 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
           <Link href="/prompts">Prompts</Link> / Run
         </p>
         <h1 className="title run-title">{run.prompt_name}</h1>
+        <p className="resume-note">
+          {resume ? (
+            <>
+              This run can read your resume saved {savedOnDate(resume.created_at)}.{" "}
+              <Link href="/profile">Change it</Link>
+            </>
+          ) : (
+            <>
+              No resume saved. If this step needs one, it will ask you to paste it, or you can{" "}
+              <Link href="/profile">save it to your profile</Link> first.
+            </>
+          )}
+        </p>
         <ChatView
           runId={run.id}
           initialMessages={messages.map((m) => ({ role: m.role, content: m.content }))}

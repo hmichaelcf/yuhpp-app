@@ -17,6 +17,9 @@ export default function Masthead({
         <span className="tag">App</span>
         {signedIn ? (
           <div className="masthead-actions">
+            <Link href="/profile" className="text-button">
+              Profile
+            </Link>
             {admin ? (
               <Link href="/admin" className="text-button">
                 Admin

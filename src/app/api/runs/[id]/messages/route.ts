@@ -11,6 +11,7 @@ import {
   runMessages,
   runsUsedThisMonth,
 } from "@/lib/runs";
+import { currentResume, savedOnDate } from "@/lib/resumes";
 import { currentMember } from "@/lib/session";
 import { loadSettings } from "@/lib/settings";
 
@@ -56,7 +57,16 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
   const promptBody = await promptBodyForRun(DB, run.prompt_id);
   if (!promptBody) return NextResponse.json({ error: "unknown_prompt" }, { status: 404 });
 
-  const history = await runMessages(DB, run.id);
+  const [history, resume] = await Promise.all([
+    runMessages(DB, run.id),
+    currentResume(DB, member.id),
+  ]);
+  const system = buildSystem(
+    run.prompt_name,
+    promptBody,
+    new Date(),
+    resume ? { text: resume.text, savedOn: savedOnDate(resume.created_at) } : null,
+  );
   const userMessageId = await addMessage(DB, run.id, "user", content);
   const messages = [
     ...history.map((m) => ({ role: m.role, content: m.content })),
@@ -79,7 +89,7 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
       try {
         const result = await streamTurn({
           model: run.model,
-          system: buildSystem(run.prompt_name, promptBody, new Date()),
+          system,
           messages,
           maxTokens: settings.number("max_output_tokens", 8000),
           webSearch: wantsWebSearch(promptBody),

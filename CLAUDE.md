@@ -24,10 +24,18 @@ https://claude.ai/code/artifact/ec5dc14b-50cc-4241-945a-872c330beb3e
      /app/run/[id] with streamed replies, monthly run cap and turn cap,
      token usage and cost recorded on every turn. Phase 1 exit: any prompt
      runs end to end with its cost logged.
+- **Saved resume (done in code, ahead of Phase 2):** /app/profile lets a
+  member upload a PDF, Word, or text file, or paste their resume. Only the
+  text is kept, and every prompt run receives it in the system frame.
 - Later phases: onboarding, application loop, interview loop, weekly review and
   practice, beta launch. See the build spec.
 
 ## Decisions made after the build spec
+
+- **Saved resume, text only** (2026-10-04): no per-run attachments. A member
+  saves one resume to their profile and every prompt reads it. Uploaded files
+  are read and discarded; only the text is stored. PDFs are read by a small
+  model (`extract_model`), Word files are unzipped in code.
 
 - **Login lives inside the app** at /app/login, not on the Webflow site. The
   Memberstack script stays off public pages, so its test mode badge never shows
@@ -65,8 +73,17 @@ https://claude.ai/code/artifact/ec5dc14b-50cc-4241-945a-872c330beb3e
   is clean. A run counts toward the monthly cap once it has one turn.
 - **Storage:** Webflow Cloud SQLite (binding `DB`) for workspace data, and
   key-value (binding `SESSIONS`) for sessions. Declared in `wrangler.json`;
-  access them through `bindings()` in `src/lib/cloudflare.ts`. Object storage
-  for resume files arrives in Phase 2.
+  access them through `bindings()` in `src/lib/cloudflare.ts`. No object
+  storage: resume files are never kept (see Saved resume).
+- **Saved resume:** `/app/api/profile/resume` takes a file or pasted text,
+  turns it into text (`readResume()` in `src/lib/resumes.ts`: PDFs through
+  `transcribeResumePdf()` in `claude.ts`, Word files through `docxText()` in
+  `src/lib/docx.ts`), and saves it as the member's current row in `resumes`.
+  The messages route passes it to `buildSystem()`, which puts it in the frame
+  inside `<saved_resume>` tags. PDF reads are paid calls: each is logged in
+  `api_usage` (purpose `resume_pdf`) and capped per day by
+  `resume_pdf_reads_daily`. The admin page's monthly cost adds `api_usage` to
+  run costs.
 - **Prompts:** the canonical text lives in the Google Sheet `yuhpp_prompts`. It
   is synced into the `prompts` table as versioned rows. Prompt text is never
   stored in this repo and never sent to the browser.
@@ -137,21 +154,26 @@ src/app/                pages and API routes (App Router)
   status/page.tsx       /app/status: configuration and storage checks
   admin/page.tsx        /app/admin: usage, prompt sync, settings (admins only)
   prompts/page.tsx      /app/prompts: pick a prompt and start a run
+  profile/page.tsx      /app/profile: save, check, replace, remove the resume
   run/[id]/page.tsx     /app/run/[id]: the chat for one run
   api/health/           /app/api/health: the same checks as JSON
   api/session/          /app/api/session: POST starts a session, DELETE ends it
   api/admin/prompts/    /app/api/admin/prompts: CSV upload (admins only)
   api/runs/             start a run; [id]/messages streams a turn; [id]/close
+  api/profile/resume/   POST saves the resume as text; DELETE removes it
   components/           Masthead, AuthForm, SignOutButton, PromptUpload,
-                        StartRunButton, ChatView
+                        StartRunButton, ChatView, ResumeForm
   globals.css           design tokens shared with the public guide
 src/lib/
   config.ts             the only place secrets are read (server only)
   public-config.ts      browser-safe values (Memberstack public key)
   admin.ts              isAdmin(), requireAdminPage(), adminFromRequest()
-  claude.ts             streams a turn from the Claude API, computes cost
+  claude.ts             streams a turn from the Claude API, computes cost,
+                        reads resume PDFs into text
   frame.ts              the Yuhpp system frame around every prompt
   runs.ts               runs and messages, always scoped to the member
+  resumes.ts            read, save, and remove the member's resume (text only)
+  docx.ts               text out of a Word (.docx) file
   settings.ts           reads the settings table
   cloudflare.ts         bindings() for DB and SESSIONS, storage checks
   csv.ts                CSV reader for the sheet export
