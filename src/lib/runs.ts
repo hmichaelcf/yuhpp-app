@@ -167,3 +167,27 @@ export async function promptCatalog(db: D1Database) {
       .all<{ key: string; name: string; description: string; stage: string | null }>()
   ).results;
 }
+
+export type PromptActivity = { lastRunId: string; lastAt: string; status: string; count: number };
+
+/** For each prompt key, the member's latest run with at least one turn, and how many. */
+export async function activityByPrompt(db: D1Database, memberId: string): Promise<Map<string, PromptActivity>> {
+  const rows = (
+    await db
+      .prepare(
+        `SELECT p.key AS prompt_key, r.id, r.status, r.updated_at
+         FROM runs r JOIN prompts p ON p.id = r.prompt_id
+         WHERE r.member_id = ?1 AND r.turns > 0
+         ORDER BY r.updated_at DESC`,
+      )
+      .bind(memberId)
+      .all<{ prompt_key: string; id: string; status: string; updated_at: string }>()
+  ).results;
+  const map = new Map<string, PromptActivity>();
+  for (const r of rows) {
+    const seen = map.get(r.prompt_key);
+    if (seen) seen.count++;
+    else map.set(r.prompt_key, { lastRunId: r.id, lastAt: r.updated_at, status: r.status, count: 1 });
+  }
+  return map;
+}

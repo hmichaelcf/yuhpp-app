@@ -31,7 +31,7 @@ export default async function StatusPage() {
             </li>
           ))}
         </ul>
-        <p className="note">
+        <p className="status-note">
           Machine-readable status: <a href={appPath("/api/health")}>{appPath("/api/health")}</a>
         </p>
       </main>

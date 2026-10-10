@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import CopyButton from "./CopyButton";
+import { callApi } from "@/lib/client-api";
 import { appPath } from "@/lib/paths";
 import { parseStream } from "@/lib/stream-protocol";
 
@@ -22,7 +24,39 @@ const ERRORS: Record<string, string> = {
   signed_out: "Your session ended. Sign in again to continue.",
 };
 
-function Markdown({ text }: { text: string }) {
+type HastNode = { type: string; value?: string; children?: HastNode[] };
+
+/** The plain text inside a rendered markdown element. */
+function hastText(node: HastNode | undefined): string {
+  if (!node) return "";
+  if (node.type === "text") return node.value ?? "";
+  return (node.children ?? []).map(hastText).join("");
+}
+
+/** Saves a search written in a run to the member's Outreach page. */
+function SaveSearchButton({ query, runId }: { query: string; runId: string }) {
+  const [state, setState] = useState<"" | "busy" | "saved" | "exists" | "failed">("");
+  async function save() {
+    setState("busy");
+    const r = await callApi("POST", "/api/searches", { query, runId });
+    setState(!r.ok ? "failed" : r.data.result === "exists" ? "exists" : "saved");
+  }
+  if (state === "saved" || state === "exists") {
+    return (
+      <span className="code-saved">
+        {state === "saved" ? "Saved to " : "Already in "}
+        <Link href="/outreach">Outreach</Link>
+      </span>
+    );
+  }
+  return (
+    <button type="button" className="copy" onClick={save} disabled={state === "busy"}>
+      {state === "busy" ? "Saving" : state === "failed" ? "Not saved, try again" : "Save search"}
+    </button>
+  );
+}
+
+function Markdown({ text, saveRunId }: { text: string; saveRunId?: string }) {
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
@@ -32,6 +66,22 @@ function Markdown({ text }: { text: string }) {
             {children}
           </a>
         ),
+        // Code blocks get a Copy button, and in a search-building run a Save
+        // button that adds the search to the Outreach page.
+        pre: ({ node, children }) => {
+          const code = hastText(node as HastNode | undefined).replace(/\n+$/, "");
+          return (
+            <div className="code-block">
+              <pre>{children}</pre>
+              {code.trim() ? (
+                <div className="code-actions">
+                  <CopyButton text={code} className="text-button" />
+                  {saveRunId ? <SaveSearchButton query={code.trim()} runId={saveRunId} /> : null}
+                </div>
+              ) : null}
+            </div>
+          );
+        },
       }}
     >
       {text}
@@ -44,11 +94,14 @@ export default function ChatView({
   initialMessages,
   initiallyOpen,
   description,
+  saveSearches = false,
 }: {
   runId: string;
   initialMessages: Message[];
   initiallyOpen: boolean;
   description: string;
+  /** Offer "Save search" on code blocks (Smart Job Search Builder runs). */
+  saveSearches?: boolean;
 }) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [open, setOpen] = useState(initiallyOpen);
@@ -162,7 +215,10 @@ export default function ChatView({
               <>
                 {m.content ? (
                   <div className="md">
-                    <Markdown text={m.content} />
+                    <Markdown
+                      text={m.content}
+                      saveRunId={saveSearches && !(busy && i === messages.length - 1) ? runId : undefined}
+                    />
                   </div>
                 ) : null}
                 {busy && i === messages.length - 1 && (status || !m.content) ? (

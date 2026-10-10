@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import Masthead from "../components/Masthead";
+import AppShell from "../components/AppShell";
 import StartRunButton from "../components/StartRunButton";
 import { isAdmin } from "@/lib/admin";
 import { bindings } from "@/lib/cloudflare";
@@ -24,16 +24,15 @@ export default async function PromptsPage() {
   ];
 
   return (
-    <>
-      <Masthead signedIn admin={isAdmin(member)} />
-      <main className="page">
+    <AppShell admin={isAdmin(member)}>
+      <div className="shell-narrow">
         <p className="eyebrow">Prompts</p>
         <h1 className="title">
           Run any step <em>of the method.</em>
         </h1>
         <p className="lede">
-          For now every prompt is open here. In the next phases, your workspace will put the right
-          one in front of you for each job and each round.
+          The whole library in one list. The route on the left puts each prompt in the phase where
+          it belongs.
         </p>
 
         {prompts.length === 0 ? (
@@ -60,7 +59,7 @@ export default async function PromptsPage() {
             );
           })
         )}
-      </main>
-    </>
+      </div>
+    </AppShell>
   );
 }
