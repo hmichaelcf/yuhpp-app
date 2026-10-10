@@ -22,22 +22,27 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 const one = (n: number) => n.toFixed(1);
 
-/** Checkpoint 04's table, built from the thresholds in settings. */
+/**
+ * Checkpoint 04's table, built from the thresholds in settings. When
+ * g3_quick_wins_min is below g3_apply_min, a middle "apply after quick wins"
+ * row appears; when they are equal (the current decision), there is one
+ * cutoff: apply at or above it, skip under it.
+ */
 function applyTable(settings: Settings): Table {
   const apply = settings.number("g3_apply_min", 7.0);
-  const quick = settings.number("g3_quick_wins_min", 5.5);
-  return {
-    head: ["Score", "What you do"],
-    rows: [
-      { a: `${one(apply)} and up`, b: "Apply. Attempt a referral first.", tone: "go" },
-      {
-        a: `${one(quick)} to ${one(apply - 0.1)}`,
-        b: "Apply only after running the Quick Wins from the Match Meter output, or if you have a referral.",
-      },
-      { a: `Under ${one(quick)}`, b: "Skip.", tone: "stop" },
-      { a: "Constraint miss", b: "Skip, whatever the score says.", tone: "stop" },
-    ],
-  };
+  const quick = Math.min(settings.number("g3_quick_wins_min", apply), apply);
+  const rows: Table["rows"] = [{ a: `${one(apply)} and up`, b: "Apply. Attempt a referral first.", tone: "go" }];
+  if (quick < apply) {
+    rows.push({
+      a: `${one(quick)} to ${one(apply - 0.1)}`,
+      b: "Apply only after running the Quick Wins from the Match Meter output, or if you have a referral.",
+    });
+  }
+  rows.push(
+    { a: `Under ${one(quick)}`, b: "Skip.", tone: "stop" },
+    { a: "Constraint miss", b: "Skip, whatever the score says.", tone: "stop" },
+  );
+  return { head: ["Score", "What you do"], rows };
 }
 
 function RuleTable({ table }: { table: Table }) {

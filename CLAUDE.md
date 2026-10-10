@@ -54,6 +54,11 @@ https://claude.ai/code/artifact/ec5dc14b-50cc-4241-945a-872c330beb3e
   (2026-10-10): naming a bottleneck needs a benchmark, which the Weekly
   Pipeline Review prompt states and labels as approximate. A rate whose
   earlier stage is under `metric_min_sample` is shown gray, as direction only.
+- **One apply cutoff at Checkpoint 04** (2026-10-10): a Match Meter score of
+  7.0 or more means apply, under 7.0 means skip. Migration 0006 sets
+  `g3_quick_wins_min` equal to `g3_apply_min`, which removes the old "apply
+  after quick wins" row from the table. Strategic exceptions are still the
+  only way to apply below the line.
 - **The route map is code** (`src/lib/route-map.ts`): rail stops, phase copy
   from the guide, and which prompts sit in each phase, listed by sheet name.
   A renamed prompt drops off its phase page until the name is updated there.
