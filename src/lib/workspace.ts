@@ -1,5 +1,6 @@
 import "server-only";
 import { readWorkDates } from "./months";
+import { distinctThemes } from "./story-themes";
 
 // The member's workspace: bullet bank, story bank, and saved searches.
 // Every function takes the member id from a verified session and filters by
@@ -296,6 +297,7 @@ export async function deleteBullet(db: D1Database, memberId: string, id: number)
 export type Story = {
   id: number;
   title: string;
+  company: string | null;
   themes: string | null;
   situation: string | null;
   task: string | null;
@@ -310,6 +312,7 @@ export type StoryInput = Omit<Story, "id" | "updated_at">;
 export function readStory(body: Record<string, unknown>): StoryInput {
   return {
     title: required(body.title, LIMITS.shortField, "The story name"),
+    company: field(body.company, LIMITS.shortField, "The company"),
     themes: cleanTags(body.themes, "The themes"),
     situation: field(body.situation, LIMITS.storyField, "Situation"),
     task: field(body.task, LIMITS.storyField, "Task"),
@@ -323,22 +326,19 @@ export function isDeveloped(s: Pick<Story, "situation" | "task" | "action" | "re
   return !!(s.situation && s.task && s.action && s.result);
 }
 
-/** Distinct themes across the stories, in the spelling first used. */
-export function storyThemes(stories: Pick<Story, "themes">[]): string[] {
-  const seen = new Map<string, string>();
-  for (const s of stories) {
-    for (const t of splitTags(s.themes)) {
-      if (!seen.has(t.toLowerCase())) seen.set(t.toLowerCase(), t);
-    }
-  }
-  return [...seen.values()];
+/**
+ * Distinct themes across the stories, grouped the same way the story bank
+ * groups them (letter case and extra spaces ignored).
+ */
+export function storyThemes(stories: Pick<Story, "title" | "company" | "themes">[]): string[] {
+  return distinctThemes(stories);
 }
 
 export async function listStories(db: D1Database, memberId: string): Promise<Story[]> {
   return (
     await db
       .prepare(
-        `SELECT id, title, themes, situation, task, action, result, updated_at FROM stories
+        `SELECT id, title, company, themes, situation, task, action, result, updated_at FROM stories
          WHERE member_id = ?1 ORDER BY updated_at DESC, id DESC`,
       )
       .bind(memberId)
@@ -346,24 +346,27 @@ export async function listStories(db: D1Database, memberId: string): Promise<Sto
   ).results;
 }
 
-export async function addStory(db: D1Database, memberId: string, s: StoryInput): Promise<void> {
-  await db
+/** Saves a new story and returns its id, so the bank can open it right away. */
+export async function addStory(db: D1Database, memberId: string, s: StoryInput): Promise<number> {
+  const row = await db
     .prepare(
-      `INSERT INTO stories (member_id, title, themes, situation, task, action, result)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)`,
+      `INSERT INTO stories (member_id, title, company, themes, situation, task, action, result)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8) RETURNING id`,
     )
-    .bind(memberId, s.title, s.themes, s.situation, s.task, s.action, s.result)
-    .run();
+    .bind(memberId, s.title, s.company, s.themes, s.situation, s.task, s.action, s.result)
+    .first<{ id: number }>();
+  if (!row) throw new Error("Could not save the story.");
+  return row.id;
 }
 
 export async function updateStory(db: D1Database, memberId: string, id: number, s: StoryInput): Promise<boolean> {
   const res = await db
     .prepare(
-      `UPDATE stories SET title = ?3, themes = ?4, situation = ?5, task = ?6, action = ?7, result = ?8,
-         updated_at = datetime('now')
+      `UPDATE stories SET title = ?3, company = ?4, themes = ?5, situation = ?6, task = ?7, action = ?8,
+         result = ?9, updated_at = datetime('now')
        WHERE id = ?1 AND member_id = ?2`,
     )
-    .bind(id, memberId, s.title, s.themes, s.situation, s.task, s.action, s.result)
+    .bind(id, memberId, s.title, s.company, s.themes, s.situation, s.task, s.action, s.result)
     .run();
   return res.meta.changes > 0;
 }

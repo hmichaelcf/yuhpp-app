@@ -7,7 +7,7 @@ import { bindings } from "@/lib/cloudflare";
 import { activityByPrompt, promptCatalog } from "@/lib/runs";
 import { currentMember } from "@/lib/session";
 import { loadSettings } from "@/lib/settings";
-import { isDeveloped, listStories, storyThemes } from "@/lib/workspace";
+import { isDeveloped, listExperiences, listStories, storyThemes } from "@/lib/workspace";
 
 export const dynamic = "force-dynamic";
 
@@ -18,9 +18,10 @@ export default async function StoriesPage() {
   if (!member) redirect("/login");
 
   const { DB } = await bindings();
-  const [settings, stories, catalog, activity] = await Promise.all([
+  const [settings, stories, experiences, catalog, activity] = await Promise.all([
     loadSettings(DB),
     listStories(DB, member.id),
+    listExperiences(DB, member.id),
     promptCatalog(DB),
     activityByPrompt(DB, member.id),
   ]);
@@ -29,6 +30,15 @@ export default async function StoriesPage() {
   const developed = stories.filter(isDeveloped).length;
   const themes = storyThemes(stories);
   const pct = Math.min(developed / min, 1) * 100;
+  // Companies to suggest in the story form: bullet bank roles first (most
+  // recent first), then any company already used on a story.
+  const companies = [
+    ...new Set(
+      [...experiences.map((x) => x.company), ...stories.map((s) => s.company)]
+        .map((c) => c?.trim())
+        .filter((c): c is string => !!c),
+    ),
+  ];
 
   return (
     <AppShell admin={isAdmin(member)} active="positioning">
@@ -68,9 +78,11 @@ export default async function StoriesPage() {
 
       <section className="home-block">
         <StoryBank
-          stories={stories.map(({ id, title, themes, situation, task, action, result }) => ({
+          companies={companies}
+          stories={stories.map(({ id, title, company, themes, situation, task, action, result }) => ({
             id,
             title,
+            company,
             themes,
             situation,
             task,
