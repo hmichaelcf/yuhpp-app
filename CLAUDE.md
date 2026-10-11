@@ -59,6 +59,15 @@ https://claude.ai/code/artifact/ec5dc14b-50cc-4241-945a-872c330beb3e
   `g3_quick_wins_min` equal to `g3_apply_min`, which removes the old "apply
   after quick wins" row from the table. Strategic exceptions are still the
   only way to apply below the line.
+- **Bullet bank roles are experiences** (2026-10-11): each role a member held
+  is one row in `experiences` (role, company, start and end month as YYYY-MM,
+  `is_current` for Present), and bullets point at it with `experience_id`.
+  Clicking a role heading fixes its title, company, or dates for every bullet
+  under it; matching another role's title and company merges the two. Roles
+  list most recent first: Present roles, then by end date, then undated ones.
+  Dates are optional; members type MM/YYYY (`src/lib/months.ts`). Migration
+  0007 backfills one experience per existing role and company; the old
+  `bullets.role` and `bullets.company` columns are no longer read.
 - **The route map is code** (`src/lib/route-map.ts`): rail stops, phase copy
   from the guide, and which prompts sit in each phase, listed by sheet name.
   A renamed prompt drops off its phase page until the name is updated there.
@@ -199,6 +208,7 @@ src/app/                pages and API routes (App Router)
   api/profile/resume/   POST saves the resume as text; DELETE removes it
   api/profile/name/     POST sets the first name the home page greets
   api/bullets/ api/stories/ api/searches/   add, edit, remove (member-scoped)
+  api/experiences/[id]  PATCH fixes a bullet bank role's title, company, dates
   api/weekly/           PUT saves one week's numbers; DELETE removes a week
   components/           AppShell, Rail, Masthead, PromptCards, BulletBank,
                         StoryBank, SavedSearches, WeeklyForm, NameForm,
@@ -226,7 +236,8 @@ src/lib/
   paths.ts              appPath(): mount-path prefix for <a> and fetch()
   stream-protocol.ts    the streamed reply format, shared by server and browser
   route-map.ts          rail stops, phase pages, prompts per phase
-  workspace.ts          bullets, stories, saved searches (server only)
+  workspace.ts          bullets, roles, stories, saved searches (server only)
+  months.ts             MM/YYYY work dates: typing mask, checks, display
   weekly.ts             weekly logs and progress metrics (server only)
   weekly-fields.ts      the weekly counts and the weekly number line
   api.ts, client-api.ts small helpers for the workspace API routes

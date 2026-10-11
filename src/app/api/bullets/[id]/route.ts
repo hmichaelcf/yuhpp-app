@@ -2,13 +2,13 @@ import { NextResponse } from "next/server";
 import { badInput, jsonBody, notFound, rowId, signedOut } from "@/lib/api";
 import { bindings } from "@/lib/cloudflare";
 import { currentMember } from "@/lib/session";
-import { LIMITS, cleanTags, deleteBullet, field, required, updateBullet } from "@/lib/workspace";
+import { InputProblem, LIMITS, cleanTags, deleteBullet, required, updateBullet } from "@/lib/workspace";
 
 export const dynamic = "force-dynamic";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-/** PATCH /app/api/bullets/[id]  { text, role?, company?, tags? } */
+/** PATCH /app/api/bullets/[id]  { text, tags?, experienceId } (experienceId moves it to another role) */
 export async function PATCH(request: Request, { params }: Ctx) {
   const member = await currentMember();
   if (!member) return signedOut();
@@ -18,10 +18,12 @@ export async function PATCH(request: Request, { params }: Ctx) {
   try {
     const bullet = {
       text: required(body.text, LIMITS.bulletText, "The bullet").replace(/\s*\n\s*/g, " "),
-      role: field(body.role, LIMITS.shortField, "The role"),
-      company: field(body.company, LIMITS.shortField, "The company"),
       tags: cleanTags(body.tags, "The tags"),
+      experienceId: Number(body.experienceId),
     };
+    if (!Number.isInteger(bullet.experienceId) || bullet.experienceId < 1) {
+      throw new InputProblem("Pick the role this bullet belongs to.");
+    }
     const { DB } = await bindings();
     if (!(await updateBullet(DB, member.id, id, bullet))) return notFound();
     return NextResponse.json({ ok: true });

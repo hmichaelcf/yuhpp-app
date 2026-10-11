@@ -1539,6 +1539,73 @@ a.link-button {
   align-items: baseline;
   flex-wrap: wrap;
 }
+.bank-heading-row {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  flex-wrap: wrap;
+  margin: 0 0 6px;
+}
+.bank-heading-row .bank-heading {
+  margin: 0;
+}
+.bank-heading-button {
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.bank-heading-button:hover .bank-heading,
+.bank-heading-button:focus-visible .bank-heading {
+  text-decoration: underline;
+  text-decoration-color: var(--main);
+  text-underline-offset: 4px;
+}
+.bank-dates {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+  margin-left: auto;
+}
+.bank-dates.missing {
+  color: var(--ink-3);
+  font-style: italic;
+}
+.bank-heading-row .text-button {
+  padding: 0;
+}
+.bank-role-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--paper);
+  border: 1px solid var(--main);
+  border-radius: 3px;
+  padding: 14px 16px;
+  margin: 0 0 8px;
+}
+.field-row.dates {
+  align-items: end;
+}
+.field-row.dates input:disabled {
+  color: var(--ink-2);
+  background: var(--main-soft);
+  border-color: var(--main-soft);
+}
+.check-row.present {
+  padding-bottom: 11px;
+}
+.check-row.present span {
+  font-family: var(--sans);
+  font-size: 14px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-2);
+}
 .bank-company {
   font-family: var(--mono);
   font-size: 11px;
@@ -2050,6 +2117,12 @@ a.link-button {
   }
   .bank-side {
     align-items: flex-start;
+  }
+  .bank-dates {
+    margin-left: 0;
+  }
+  .check-row.present {
+    padding-bottom: 0;
   }
   .rate {
     grid-template-columns: minmax(0, 1fr) 64px;

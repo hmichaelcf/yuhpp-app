@@ -1,4 +1,5 @@
 import "server-only";
+import { readWorkDates } from "./months";
 
 // The member's workspace: bullet bank, story bank, and saved searches.
 // Every function takes the member id from a verified session and filters by
@@ -51,15 +52,36 @@ export function splitTags(tags: string | null): string[] {
   return tags ? tags.split(",").map((t) => t.trim()).filter(Boolean) : [];
 }
 
-// ---------- bullets ----------
+// ---------- bullets and experiences ----------
+
+/**
+ * One role a member held: the heading the bullet bank groups bullets under.
+ * Months are 'YYYY-MM'; is_current = 1 means "Present".
+ */
+export type Experience = {
+  id: number;
+  role: string | null;
+  company: string | null;
+  start_month: string | null;
+  end_month: string | null;
+  is_current: number;
+};
 
 export type Bullet = {
   id: number;
   text: string;
+  tags: string | null;
+  experience_id: number | null;
+  updated_at: string;
+};
+
+/** Role, company, and dates as the member sent them, already checked. */
+export type ExperienceInput = {
   role: string | null;
   company: string | null;
-  tags: string | null;
-  updated_at: string;
+  start: string | null;
+  end: string | null;
+  current: boolean;
 };
 
 /**
@@ -73,49 +95,199 @@ export function splitBulletLines(text: string): string[] {
     .filter(Boolean);
 }
 
+/**
+ * The member's roles, most recent first: roles marked Present (latest start
+ * first), then past roles by end date (or start date when there is no end),
+ * then roles with no dates at all, newest entry first.
+ */
+export async function listExperiences(db: D1Database, memberId: string): Promise<Experience[]> {
+  return (
+    await db
+      .prepare(
+        `SELECT id, role, company, start_month, end_month, is_current FROM experiences
+         WHERE member_id = ?1
+         ORDER BY
+           CASE WHEN is_current = 1 THEN 0
+                WHEN end_month IS NOT NULL OR start_month IS NOT NULL THEN 1
+                ELSE 2 END,
+           COALESCE(end_month, start_month) DESC,
+           start_month DESC,
+           id DESC`,
+      )
+      .bind(memberId)
+      .all<Experience>()
+  ).results;
+}
+
 export async function listBullets(db: D1Database, memberId: string): Promise<Bullet[]> {
   return (
     await db
       .prepare(
-        `SELECT id, text, role, company, tags, updated_at FROM bullets
-         WHERE member_id = ?1 ORDER BY COALESCE(company, ''), COALESCE(role, ''), id`,
+        `SELECT id, text, tags, experience_id, updated_at FROM bullets
+         WHERE member_id = ?1 ORDER BY id`,
       )
       .bind(memberId)
       .all<Bullet>()
   ).results;
 }
 
+/** The member's experience with this role and company, ignoring letter case. */
+async function findExperience(
+  db: D1Database,
+  memberId: string,
+  role: string | null,
+  company: string | null,
+  exceptId: number | null = null,
+): Promise<Experience | null> {
+  return db
+    .prepare(
+      `SELECT id, role, company, start_month, end_month, is_current FROM experiences
+       WHERE member_id = ?1
+         AND lower(COALESCE(role, '')) = lower(COALESCE(?2, ''))
+         AND lower(COALESCE(company, '')) = lower(COALESCE(?3, ''))
+         AND id IS NOT ?4
+       ORDER BY id LIMIT 1`,
+    )
+    .bind(memberId, role, company, exceptId)
+    .first<Experience>();
+}
+
+/** Reads role, company, start, end, and Present from a request body. */
+export function experienceFields(body: Record<string, unknown>): ExperienceInput {
+  const role = field(body.role, LIMITS.shortField, "The role");
+  const company = field(body.company, LIMITS.shortField, "The company");
+  const start = typeof body.start === "string" ? body.start : "";
+  const end = typeof body.end === "string" ? body.end : "";
+  const checked = readWorkDates(start, end, body.current === true);
+  if (!checked.ok) throw new InputProblem(checked.message);
+  return { role, company, ...checked.dates };
+}
+
+function hasDates(x: ExperienceInput): boolean {
+  return x.start !== null || x.end !== null || x.current;
+}
+
+/** Removes the member's experiences that no longer have any bullets. */
+function dropEmptyExperiences(db: D1Database, memberId: string) {
+  return db
+    .prepare(
+      `DELETE FROM experiences WHERE member_id = ?1 AND id NOT IN (
+         SELECT experience_id FROM bullets WHERE member_id = ?1 AND experience_id IS NOT NULL)`,
+    )
+    .bind(memberId);
+}
+
+/**
+ * Adds bullets under a role. A role and company the member already has (in
+ * any letter case) gets the new bullets; dates sent with them replace the
+ * saved dates, and blank dates leave the saved ones alone.
+ */
 export async function addBullets(
   db: D1Database,
   memberId: string,
   lines: string[],
-  meta: { role: string | null; company: string | null; tags: string | null },
+  meta: ExperienceInput & { tags: string | null },
 ): Promise<number> {
+  const existing = await findExperience(db, memberId, meta.role, meta.company);
+  let experienceId: number;
+  if (existing) {
+    experienceId = existing.id;
+    if (hasDates(meta)) {
+      await db
+        .prepare(
+          `UPDATE experiences SET start_month = ?3, end_month = ?4, is_current = ?5, updated_at = datetime('now')
+           WHERE id = ?1 AND member_id = ?2`,
+        )
+        .bind(experienceId, memberId, meta.start, meta.end, meta.current ? 1 : 0)
+        .run();
+    }
+  } else {
+    const row = await db
+      .prepare(
+        `INSERT INTO experiences (member_id, role, company, start_month, end_month, is_current)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6) RETURNING id`,
+      )
+      .bind(memberId, meta.role, meta.company, meta.start, meta.end, meta.current ? 1 : 0)
+      .first<{ id: number }>();
+    if (!row) throw new Error("Could not save the role.");
+    experienceId = row.id;
+  }
   const insert = db.prepare(
-    "INSERT INTO bullets (member_id, text, role, company, tags) VALUES (?1, ?2, ?3, ?4, ?5)",
+    "INSERT INTO bullets (member_id, text, tags, experience_id) VALUES (?1, ?2, ?3, ?4)",
   );
-  await db.batch(lines.map((line) => insert.bind(memberId, line, meta.role, meta.company, meta.tags)));
+  await db.batch(lines.map((line) => insert.bind(memberId, line, meta.tags, experienceId)));
   return lines.length;
 }
 
+/**
+ * Fixes a role's title, company, or dates; every bullet under it follows.
+ * If the new title and company match another of the member's roles, the two
+ * become one: the bullets move over and this role is removed.
+ * Returns false when the role is not the member's.
+ */
+export async function updateExperience(
+  db: D1Database,
+  memberId: string,
+  id: number,
+  x: ExperienceInput,
+): Promise<{ found: boolean; merged: boolean }> {
+  const mine = await db
+    .prepare("SELECT id FROM experiences WHERE id = ?1 AND member_id = ?2")
+    .bind(id, memberId)
+    .first<{ id: number }>();
+  if (!mine) return { found: false, merged: false };
+
+  const twin = await findExperience(db, memberId, x.role, x.company, id);
+  const target = twin ? twin.id : id;
+  const statements = [
+    db
+      .prepare(
+        `UPDATE experiences SET role = ?3, company = ?4, start_month = ?5, end_month = ?6, is_current = ?7,
+           updated_at = datetime('now')
+         WHERE id = ?1 AND member_id = ?2`,
+      )
+      .bind(target, memberId, x.role, x.company, x.start, x.end, x.current ? 1 : 0),
+  ];
+  if (twin) {
+    statements.push(
+      db
+        .prepare(
+          `UPDATE bullets SET experience_id = ?3, updated_at = datetime('now')
+           WHERE experience_id = ?1 AND member_id = ?2`,
+        )
+        .bind(id, memberId, twin.id),
+      db.prepare("DELETE FROM experiences WHERE id = ?1 AND member_id = ?2").bind(id, memberId),
+    );
+  }
+  await db.batch(statements);
+  return { found: true, merged: !!twin };
+}
+
+/** Edits one bullet's text and tags, and can move it to another of the member's roles. */
 export async function updateBullet(
   db: D1Database,
   memberId: string,
   id: number,
-  b: { text: string; role: string | null; company: string | null; tags: string | null },
+  b: { text: string; tags: string | null; experienceId: number },
 ): Promise<boolean> {
-  const res = await db
-    .prepare(
-      `UPDATE bullets SET text = ?3, role = ?4, company = ?5, tags = ?6, updated_at = datetime('now')
-       WHERE id = ?1 AND member_id = ?2`,
-    )
-    .bind(id, memberId, b.text, b.role, b.company, b.tags)
-    .run();
+  const [res] = await db.batch([
+    db
+      .prepare(
+        `UPDATE bullets SET text = ?3, tags = ?4, experience_id = ?5, updated_at = datetime('now')
+         WHERE id = ?1 AND member_id = ?2
+           AND EXISTS (SELECT 1 FROM experiences WHERE id = ?5 AND member_id = ?2)`,
+      )
+      .bind(id, memberId, b.text, b.tags, b.experienceId),
+    dropEmptyExperiences(db, memberId),
+  ]);
   return res.meta.changes > 0;
 }
 
 export async function deleteBullet(db: D1Database, memberId: string, id: number): Promise<boolean> {
-  const res = await db.prepare("DELETE FROM bullets WHERE id = ?1 AND member_id = ?2").bind(id, memberId).run();
+  const [res] = await db.batch([
+    db.prepare("DELETE FROM bullets WHERE id = ?1 AND member_id = ?2").bind(id, memberId),
+    dropEmptyExperiences(db, memberId),
+  ]);
   return res.meta.changes > 0;
 }
 

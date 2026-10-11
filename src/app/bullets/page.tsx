@@ -7,7 +7,7 @@ import { bindings } from "@/lib/cloudflare";
 import { activityByPrompt, promptCatalog } from "@/lib/runs";
 import { currentMember } from "@/lib/session";
 import { loadSettings } from "@/lib/settings";
-import { listBullets } from "@/lib/workspace";
+import { listBullets, listExperiences } from "@/lib/workspace";
 
 export const dynamic = "force-dynamic";
 
@@ -18,9 +18,10 @@ export default async function BulletsPage() {
   if (!member) redirect("/login");
 
   const { DB } = await bindings();
-  const [settings, bullets, catalog, activity] = await Promise.all([
+  const [settings, bullets, experiences, catalog, activity] = await Promise.all([
     loadSettings(DB),
     listBullets(DB, member.id),
+    listExperiences(DB, member.id),
     promptCatalog(DB),
     activityByPrompt(DB, member.id),
   ]);
@@ -31,17 +32,26 @@ export default async function BulletsPage() {
       <p className="eyebrow">Workspace</p>
       <h1 className="panel-title">Bullet bank</h1>
       <p className="purpose">
-        Every resume bullet you have written, kept in one place and sorted by role, so the strongest
+        Every resume bullet you have written, kept in one place and sorted by role from most recent
+        to oldest, so the strongest
         ones are ready <em>whenever you tailor a resume.</em>
       </p>
       <p className="aside">
         Paste several at once, one per line. Anything over {max} characters is flagged so you can
-        tighten it later.
+        tighten it later. Click a role&apos;s heading to fix its title, company, or dates.
       </p>
 
       <section className="home-block">
         <BulletBank
-          bullets={bullets.map(({ id, text, role, company, tags }) => ({ id, text, role, company, tags }))}
+          bullets={bullets.map(({ id, text, tags, experience_id }) => ({ id, text, tags, experienceId: experience_id }))}
+          experiences={experiences.map((x) => ({
+            id: x.id,
+            role: x.role,
+            company: x.company,
+            start: x.start_month,
+            end: x.end_month,
+            current: x.is_current === 1,
+          }))}
           max={max}
         />
       </section>
