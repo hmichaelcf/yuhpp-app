@@ -6,6 +6,7 @@ import "server-only";
 export type Member = {
   id: string;
   email: string | null;
+  first_name: string | null;
   cohort_id: string | null;
   is_admin: number;
   consent_terms_at: string | null;
@@ -42,9 +43,14 @@ export async function upsertMember(
 export async function getMember(db: D1Database, id: string): Promise<Member | null> {
   return db
     .prepare(
-      `SELECT id, email, cohort_id, is_admin, consent_terms_at, consent_research_at, created_at
+      `SELECT id, email, first_name, cohort_id, is_admin, consent_terms_at, consent_research_at, created_at
        FROM members WHERE id = ?1`,
     )
     .bind(id)
     .first<Member>();
+}
+
+/** Sets or clears the name the workspace greets the member by. */
+export async function setFirstName(db: D1Database, id: string, firstName: string | null): Promise<void> {
+  await db.prepare("UPDATE members SET first_name = ?2 WHERE id = ?1").bind(id, firstName).run();
 }

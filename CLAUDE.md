@@ -27,6 +27,14 @@ https://claude.ai/code/artifact/ec5dc14b-50cc-4241-945a-872c330beb3e
 - **Saved resume (done in code, ahead of Phase 2):** /app/profile lets a
   member upload a PDF, Word, or text file, or paste their resume. Only the
   text is kept, and every prompt run receives it in the system frame.
+- **Workspace home (done in code, 2026-10-10):** every signed-in page uses
+  the route rail from the public guide (`AppShell`, `Rail`). /app greets the
+  member and links to what they are working on: resume, bullet bank
+  (/app/bullets), STAR stories (/app/stories), outreach searches
+  (/app/outreach), and the weekly review (/app/weekly). Each phase on the rail
+  is a page (/app/phase/[slug]) with the guide's copy and every prompt
+  runnable in place. Smart Job Search Builder runs get a Save search button on
+  each query. Good company is /app/community.
 - Later phases: onboarding, application loop, interview loop, weekly review and
   practice, beta launch. See the build spec.
 
@@ -37,6 +45,23 @@ https://claude.ai/code/artifact/ec5dc14b-50cc-4241-945a-872c330beb3e
   are read and discarded; only the text is stored. PDFs are read by a small
   model (`extract_model`), Word files are unzipped in code.
 
+- **Workspace data lives in the app, not Google Drive** (2026-10-10): bullets,
+  stories, saved searches, and weekly numbers are rows in SQLite, keyed by
+  member. Linking to Drive would need Google access per member, and prompts
+  could not read the files. Keeping them here means a later change can hand
+  the story bank to prompts the way the saved resume is handed over today.
+- **The weekly review shows the member's own rates, not a bottleneck**
+  (2026-10-10): naming a bottleneck needs a benchmark, which the Weekly
+  Pipeline Review prompt states and labels as approximate. A rate whose
+  earlier stage is under `metric_min_sample` is shown gray, as direction only.
+- **One apply cutoff at Checkpoint 04** (2026-10-10): a Match Meter score of
+  7.0 or more means apply, under 7.0 means skip. Migration 0006 sets
+  `g3_quick_wins_min` equal to `g3_apply_min`, which removes the old "apply
+  after quick wins" row from the table. Strategic exceptions are still the
+  only way to apply below the line.
+- **The route map is code** (`src/lib/route-map.ts`): rail stops, phase copy
+  from the guide, and which prompts sit in each phase, listed by sheet name.
+  A renamed prompt drops off its phase page until the name is updated there.
 - **Login lives inside the app** at /app/login, not on the Webflow site. The
   Memberstack script stays off public pages, so its test mode badge never shows
   to visitors. The Webflow homepage links to /app/login.
@@ -157,6 +182,10 @@ Local development uses `.env.local` (copy `.env.example`; never commit it).
 ```
 src/app/                pages and API routes (App Router)
   page.tsx              /app: signed-in home (redirects to /login if signed out)
+  phase/[slug]/         /app/phase/direction ... /app/phase/rejection
+  bullets/ stories/     the bullet bank and the story bank
+  outreach/ weekly/     saved searches; weekly numbers and progress metrics
+  community/            Good company: WhatsApp invite and the weekly number
   login/page.tsx        /app/login: sign in and create account
   status/page.tsx       /app/status: configuration and storage checks
   admin/page.tsx        /app/admin: usage, prompt sync, settings (admins only)
@@ -168,7 +197,12 @@ src/app/                pages and API routes (App Router)
   api/admin/prompts/    /app/api/admin/prompts: CSV upload (admins only)
   api/runs/             start a run; [id]/messages streams a turn; [id]/close
   api/profile/resume/   POST saves the resume as text; DELETE removes it
-  components/           Masthead, AuthForm, SignOutButton, PromptUpload,
+  api/profile/name/     POST sets the first name the home page greets
+  api/bullets/ api/stories/ api/searches/   add, edit, remove (member-scoped)
+  api/weekly/           PUT saves one week's numbers; DELETE removes a week
+  components/           AppShell, Rail, Masthead, PromptCards, BulletBank,
+                        StoryBank, SavedSearches, WeeklyForm, NameForm,
+                        CopyButton, AuthForm, SignOutButton, PromptUpload,
                         StartRunButton, ChatView, ResumeForm
   globals.css           design tokens shared with the public guide
 src/lib/
@@ -191,6 +225,11 @@ src/lib/
   session.ts            create, read, and end sessions
   paths.ts              appPath(): mount-path prefix for <a> and fetch()
   stream-protocol.ts    the streamed reply format, shared by server and browser
+  route-map.ts          rail stops, phase pages, prompts per phase
+  workspace.ts          bullets, stories, saved searches (server only)
+  weekly.ts             weekly logs and progress metrics (server only)
+  weekly-fields.ts      the weekly counts and the weekly number line
+  api.ts, client-api.ts small helpers for the workspace API routes
 migrations/             numbered SQL migrations, applied on deploy
 wrangler.json           storage bindings
 docs/RUNBOOK.md         how to deploy, change keys, roll back, fix sign-in

@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import ChatView from "../../components/ChatView";
-import Masthead from "../../components/Masthead";
+import AppShell from "../../components/AppShell";
 import { isAdmin } from "@/lib/admin";
 import { bindings } from "@/lib/cloudflare";
 import { currentResume, savedOnDate } from "@/lib/resumes";
+import { SEARCH_BUILDER, nameKey, placeOfPrompt } from "@/lib/route-map";
 import { getRun, runMessages } from "@/lib/runs";
 import { currentMember } from "@/lib/session";
 
@@ -25,12 +26,13 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
     currentResume(DB, member.id),
   ]);
 
+  const place = placeOfPrompt(run.prompt_name);
+
   return (
-    <>
-      <Masthead signedIn admin={isAdmin(member)} />
-      <main className="page">
+    <AppShell admin={isAdmin(member)} active={place?.stop}>
+      <div className="shell-narrow">
         <p className="eyebrow">
-          <Link href="/prompts">Prompts</Link> / Run
+          {place ? <Link href={place.href}>{place.label}</Link> : <Link href="/prompts">Prompts</Link>} / Run
         </p>
         <h1 className="title run-title">{run.prompt_name}</h1>
         <p className="resume-note">
@@ -51,8 +53,9 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
           initialMessages={messages.map((m) => ({ role: m.role, content: m.content }))}
           initiallyOpen={run.status === "open"}
           description={run.prompt_description}
+          saveSearches={nameKey(run.prompt_name) === nameKey(SEARCH_BUILDER)}
         />
-      </main>
-    </>
+      </div>
+    </AppShell>
   );
 }

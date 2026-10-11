@@ -4,15 +4,22 @@ import SignOutButton from "./SignOutButton";
 export default function Masthead({
   signedIn = false,
   admin = false,
+  wide = false,
 }: {
   signedIn?: boolean;
   admin?: boolean;
+  /** Full width, to line up with the workspace rail. */
+  wide?: boolean;
 }) {
   return (
-    <header className="masthead">
+    <header className={wide ? "masthead wide" : "masthead"}>
       <div className="masthead-in">
         <Link href="/" className="wordmark">
-          Yuhpp <span className="bar">|</span> The Job Search System
+          Yuhpp
+          <span className="wm-long">
+            {" "}
+            <span className="bar">|</span> The Job Search System
+          </span>
         </Link>
         <span className="tag">App</span>
         {signedIn ? (

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
-import Masthead from "../components/Masthead";
+import AppShell from "../components/AppShell";
+import NameForm from "../components/NameForm";
 import ResumeForm from "../components/ResumeForm";
 import { isAdmin } from "@/lib/admin";
 import { bindings } from "@/lib/cloudflare";
@@ -18,9 +19,8 @@ export default async function ProfilePage() {
   const resume = await currentResume(DB, member.id);
 
   return (
-    <>
-      <Masthead signedIn admin={isAdmin(member)} />
-      <main className="page">
+    <AppShell admin={isAdmin(member)} active="positioning">
+      <div className="shell-narrow">
         <p className="eyebrow">Profile</p>
         <h1 className="title">
           Your resume, <em>saved once.</em>
@@ -29,6 +29,11 @@ export default async function ProfilePage() {
           Every prompt reads the resume you save here, so you never need to paste it into a run.
           Only the text is kept; the file you upload is read and then discarded.
         </p>
+
+        <section className="admin-block" id="name">
+          <p className="section-label">Your name</p>
+          <NameForm initial={member.first_name ?? ""} />
+        </section>
 
         <section className="admin-block">
           <p className="section-label">{resume ? "Replace your resume" : "Add your resume"}</p>
@@ -47,7 +52,7 @@ export default async function ProfilePage() {
             <pre className="resume-preview">{resume.text}</pre>
           </section>
         ) : null}
-      </main>
-    </>
+      </div>
+    </AppShell>
   );
 }

@@ -1,30 +1,32 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import Masthead from "./components/Masthead";
+import AppShell from "./components/AppShell";
 import { isAdmin } from "@/lib/admin";
 import { bindings } from "@/lib/cloudflare";
-import { currentResume, savedOnDate, sourceLabel } from "@/lib/resumes";
+import { shortDate } from "@/lib/dates";
+import { currentResume, sourceLabel } from "@/lib/resumes";
+import { ENTRIES } from "@/lib/route-map";
 import { recentRuns, runsUsedThisMonth } from "@/lib/runs";
 import { currentMember } from "@/lib/session";
 import { loadSettings } from "@/lib/settings";
+import { computeMetrics, currentWeek, listLogs } from "@/lib/weekly";
+import { workspaceCounts } from "@/lib/workspace";
 
-// Signed-in home. Becomes the dashboard in later phases.
+// Signed-in home: a welcome, the member's workspace (what they are working
+// on), their recent runs, and the guide's "start here" entries.
+
 export const dynamic = "force-dynamic";
 
-const COMING = [
-  { phase: "Phase 2", text: "Onboarding: your direction, positioning, and story bank." },
-  { phase: "Phase 3", text: "Your jobs: constraint check, Match Meter, and applying." },
-  { phase: "Phase 4", text: "Interviews: a prep stack for each round type." },
-  { phase: "Phase 5", text: "Your weekly review and the practice loop." },
-];
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
-function when(sqlite: string): string {
-  return new Date(`${sqlite.replace(" ", "T")}Z`).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    timeZone: "America/Los_Angeles",
-  });
-}
+type Tile = {
+  href: string;
+  code: string;
+  title: string;
+  status: string;
+  done: boolean;
+  action: string;
+};
 
 export default async function Home() {
   const member = await currentMember();
@@ -33,85 +35,159 @@ export default async function Home() {
   }
 
   const { DB } = await bindings();
-  const [settings, used, runs, resume] = await Promise.all([
+  const [settings, used, runs, resume, counts, logs] = await Promise.all([
     loadSettings(DB),
     runsUsedThisMonth(DB, member.id),
-    recentRuns(DB, member.id),
+    recentRuns(DB, member.id, 5),
     currentResume(DB, member.id),
+    workspaceCounts(DB, member.id),
+    listLogs(DB, member.id),
   ]);
   const cap = settings.number("run_cap_monthly", 75);
   const left = Math.max(cap - used, 0);
+  const storyMin = settings.number("story_bank_target_min", 6);
+  const storyMax = settings.number("story_bank_target_max", 8);
+  const weekly = computeMetrics(logs, currentWeek(), settings.number("metric_min_sample", 10));
+
+  const tiles: Tile[] = [
+    {
+      href: "/profile",
+      code: "Phase 02",
+      title: "Current resume",
+      status: resume
+        ? `Saved ${shortDate(resume.created_at)}, ${sourceLabel(resume.source)}. Every prompt reads it.`
+        : "Not added yet. Save it once and every prompt can read it.",
+      done: !!resume,
+      action: resume ? "View or replace" : "Add your resume",
+    },
+    {
+      href: "/bullets",
+      code: "Phase 02",
+      title: "Bullet bank",
+      status: counts.bullets
+        ? `${plural(counts.bullets, "bullet", "bullets")} saved, sorted by role.`
+        : "Keep every resume bullet here, sorted by role, ready for the next tailored resume.",
+      done: counts.bullets > 0,
+      action: counts.bullets ? "Open the bank" : "Add bullets",
+    },
+    {
+      href: "/stories",
+      code: "Phase 02",
+      title: "STAR stories",
+      status: counts.stories
+        ? `${plural(counts.developedStories, "developed story", "developed stories")}, ${plural(counts.themes, "theme", "themes")}. Checkpoint 02 asks for ${storyMin} to ${storyMax}.`
+        : `Your story bank. Checkpoint 02 asks for ${storyMin} to ${storyMax} developed stories covering distinct themes.`,
+      done: counts.developedStories >= storyMin,
+      action: counts.stories ? "Open the bank" : "Add a story",
+    },
+    {
+      href: "/outreach",
+      code: "Phase 03",
+      title: "Outreach",
+      status: counts.searches
+        ? `${plural(counts.searches, "saved search", "saved searches")}, one click from running.`
+        : "Save the searches Smart Job Search Builder writes for you, and run them in one click.",
+      done: counts.searches > 0,
+      action: counts.searches ? "Open searches" : "Save a search",
+    },
+    {
+      href: "/weekly",
+      code: "Weekly",
+      title: "Weekly review",
+      status: weekly.thisWeek
+        ? `This week is logged. ${weekly.streak > 1 ? `${weekly.streak} weeks in a row.` : ""}`.trim()
+        : weekly.weeksLogged
+          ? `This week is not logged yet.${weekly.streak > 0 ? ` ${plural(weekly.streak, "week", "weeks")} in a row so far.` : ""}`
+          : "Log your numbers each week to see which stage is converting and which is not.",
+      done: !!weekly.thisWeek,
+      action: weekly.thisWeek ? "See your progress" : "Log this week",
+    },
+  ];
 
   return (
-    <>
-      <Masthead signedIn admin={isAdmin(member)} />
-      <main className="page">
-        <p className="eyebrow">Signed in</p>
-        <h1 className="title">
-          Welcome to <em>your workspace.</em>
-        </h1>
-        <p className="lede">
-          You are signed in as <strong>{member.email ?? "a Yuhpp member"}</strong>. You have{" "}
-          <strong>
-            {left} of {cap}
-          </strong>{" "}
-          prompt runs left this month.
-        </p>
-        <p>
-          <Link href="/prompts" className="primary-button inline link-button">
-            Run a prompt
-          </Link>
-        </p>
+    <AppShell admin={isAdmin(member)} active="start">
+      <p className="eyebrow">Your workspace</p>
+      <h1 className="title">
+        {member.first_name ? (
+          <>
+            Welcome, <em>{member.first_name}.</em>
+          </>
+        ) : (
+          <>
+            Welcome <em>back.</em>
+          </>
+        )}
+      </h1>
+      <p className="lede">
+        You have{" "}
+        <strong>
+          {left} of {cap}
+        </strong>{" "}
+        prompt runs left this month. Pick a phase on the route to run its prompts, or open what you
+        are working on below.
+        {member.first_name ? null : (
+          <>
+            {" "}
+            <Link href="/profile#name" className="quiet-link">
+              Add your first name
+            </Link>
+          </>
+        )}
+      </p>
 
-        <section className="admin-block">
-          <p className="section-label">Your profile</p>
-          <ul className="checks">
-            <li className={resume ? "check ok" : "check pending"}>
-              <span className="dot" aria-hidden="true" />
-              <span className="label">
-                <Link href="/profile">Resume</Link>
-              </span>
-              <span className="detail">
-                {resume
-                  ? `Saved ${savedOnDate(resume.created_at)}, ${sourceLabel(resume.source)}. Prompts read it automatically.`
-                  : "Not added yet. Add it once and every prompt can use it."}
-              </span>
+      <section className="home-block" aria-labelledby="working-on">
+        <p className="section-label" id="working-on">
+          What you are working on
+        </p>
+        <ul className="tiles">
+          {tiles.map((t) => (
+            <li key={t.href}>
+              <Link href={t.href} className={t.done ? "tile done" : "tile"}>
+                <span className="tile-code">
+                  <span className="tile-dot" aria-hidden="true" />
+                  {t.code}
+                </span>
+                <span className="tile-title">{t.title}</span>
+                <span className="tile-status">{t.status}</span>
+                <span className="tile-action">{t.action} &rarr;</span>
+              </Link>
             </li>
-          </ul>
-        </section>
+          ))}
+        </ul>
+      </section>
 
-        {runs.length > 0 ? (
-          <section className="admin-block">
-            <p className="section-label">Your recent runs</p>
-            <ul className="checks">
-              {runs.map((r) => (
-                <li key={r.id} className={r.status === "open" ? "check ok" : "check pending"}>
-                  <span className="dot" aria-hidden="true" />
-                  <span className="label">
-                    <Link href={`/run/${r.id}`}>{r.prompt_name}</Link>
+      {runs.length > 0 ? (
+        <section className="home-block">
+          <p className="section-label">Pick up where you left off</p>
+          <ul className="run-list">
+            {runs.map((r) => (
+              <li key={r.id}>
+                <Link href={`/run/${r.id}`} className="run-row">
+                  <span className="run-name">{r.prompt_name}</span>
+                  <span className={r.status === "open" ? "run-state open" : "run-state"}>
+                    {r.status === "open" ? "In progress" : "Finished"}, {shortDate(r.created_at)}
                   </span>
-                  <span className="detail">
-                    {r.status === "open" ? "In progress" : "Finished"}, {when(r.created_at)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
-
-        <section className="admin-block">
-          <p className="section-label">What is coming</p>
-          <ul className="checks">
-            {COMING.map((item) => (
-              <li key={item.phase} className="check pending">
-                <span className="dot" aria-hidden="true" />
-                <span className="label">{item.phase}</span>
-                <span className="detail">{item.text}</span>
+                </Link>
               </li>
             ))}
           </ul>
+          <p className="more-link">
+            <Link href="/prompts">See every prompt in the library</Link>
+          </p>
         </section>
-      </main>
-    </>
+      ) : null}
+
+      <section className="home-block">
+        <p className="section-label">Not sure where you are? Start here</p>
+        <div className="entry-grid">
+          {ENTRIES.map((e) => (
+            <Link key={e.q} href={e.href} className="entry">
+              <span className="entry-q">{e.q}</span>
+              <span className="entry-a">{e.a} &rarr;</span>
+            </Link>
+          ))}
+        </div>
+      </section>
+    </AppShell>
   );
 }
