@@ -7,7 +7,7 @@ import {
   LIMITS,
   addBullets,
   cleanTags,
-  field,
+  experienceFields,
   required,
   splitBulletLines,
 } from "@/lib/workspace";
@@ -15,8 +15,9 @@ import {
 export const dynamic = "force-dynamic";
 
 /**
- * POST /app/api/bullets  { text, role?, company?, tags? }
+ * POST /app/api/bullets  { text, role?, company?, tags?, start?, end?, current? }
  * Adds one bullet per line of text, all under the same role and company.
+ * start and end are MM/YYYY; current: true means the member still works there.
  */
 export async function POST(request: Request) {
   const member = await currentMember();
@@ -31,11 +32,7 @@ export async function POST(request: Request) {
     }
     const long = lines.find((l) => l.length > LIMITS.bulletText);
     if (long) throw new InputProblem(`One line is over ${LIMITS.bulletText} characters. Is it two bullets?`);
-    const meta = {
-      role: field(body.role, LIMITS.shortField, "The role"),
-      company: field(body.company, LIMITS.shortField, "The company"),
-      tags: cleanTags(body.tags, "The tags"),
-    };
+    const meta = { ...experienceFields(body), tags: cleanTags(body.tags, "The tags") };
     const { DB } = await bindings();
     const added = await addBullets(DB, member.id, lines, meta);
     return NextResponse.json({ ok: true, added });
