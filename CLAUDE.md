@@ -68,6 +68,16 @@ https://claude.ai/code/artifact/ec5dc14b-50cc-4241-945a-872c330beb3e
   Dates are optional; members type MM/YYYY (`src/lib/months.ts`). Migration
   0007 backfills one experience per existing role and company; the old
   `bullets.role` and `bullets.company` columns are no longer read.
+- **The story bank is grouped by theme** (2026-10-11): stories have a
+  `company` (migration 0008), and the bank lists themes A to Z. Opening a theme
+  shows "Company | Story name" for each story tagged with it (a story with
+  three themes appears under all three); opening a story shows it in full
+  below its row. One theme and one story are open at a time, because members
+  use the bank during interviews to go from the question's theme to the story.
+  Theme spellings that differ only in letter case or spacing are one theme
+  (`src/lib/story-themes.ts`, shared by server and browser). The form writes
+  Situation, Task, Action, and Result as one section, and offers the member's
+  own themes plus the five example themes from STAR Story Scout as one-tap picks.
 - **The route map is code** (`src/lib/route-map.ts`): rail stops, phase copy
   from the guide, and which prompts sit in each phase, listed by sheet name.
   A renamed prompt drops off its phase page until the name is updated there.
