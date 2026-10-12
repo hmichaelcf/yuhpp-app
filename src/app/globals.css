@@ -2553,3 +2553,289 @@ a.link-button {
     display: none;
   }
 }
+
+/* ---------- what a run reads, and the story picker ---------- */
+.run-context {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 14px;
+  margin: -6px 0 22px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+}
+.run-context-label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.run-context-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 22px;
+  flex: 1;
+  min-width: 0;
+}
+.ctx {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  font-size: 14px;
+}
+.ctx-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink-3);
+  align-self: center;
+  flex: none;
+}
+.ctx.on .ctx-dot {
+  background: var(--main);
+  border-color: var(--main);
+}
+.ctx-name {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.ctx-detail {
+  color: var(--ink-2);
+}
+.ctx.off .ctx-detail {
+  color: var(--ink-3);
+}
+.ctx-link {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--main);
+  text-decoration: none;
+}
+.ctx-link:hover {
+  text-decoration: underline;
+}
+.ctx-updated {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--main);
+  background: var(--main-soft);
+  border-radius: 2px;
+  padding: 1px 6px;
+  animation: ctx-pulse 0.6s var(--ease) both;
+}
+@keyframes ctx-pulse {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+}
+
+.composer-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.add-stories {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--main);
+  background: var(--surface);
+  border: 1px solid var(--main);
+  border-radius: 2px;
+  padding: 11px 14px;
+  transition: background 0.18s var(--ease), color 0.18s var(--ease);
+}
+.add-stories::before {
+  content: "+";
+  content: "+" / "";
+  font-size: 13px;
+  line-height: 1;
+}
+.add-stories:hover,
+.add-stories[aria-expanded="true"] {
+  background: var(--main-soft);
+}
+
+.picker {
+  background: var(--surface);
+  border: 1px solid var(--main);
+  border-radius: 3px;
+  box-shadow: 0 10px 30px -18px rgba(15, 26, 28, 0.45);
+  animation: rise 0.25s var(--ease) both;
+}
+.picker-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--paper);
+}
+.picker-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.picker-head .text-button {
+  color: var(--main);
+  padding: 2px 0;
+}
+.picker-body {
+  max-height: min(360px, 50vh);
+  overflow-y: auto;
+  padding: 4px 8px 8px;
+}
+.picker-theme {
+  border: 0;
+  margin: 0;
+  padding: 8px 0 0;
+  min-width: 0;
+}
+.picker-theme legend {
+  padding: 4px 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.picker-theme.untagged legend {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--ink-2);
+}
+.picker-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 15px;
+  transition: background 0.15s var(--ease);
+}
+.picker-row:hover {
+  background: var(--paper);
+}
+.picker-row.on {
+  background: var(--main-soft);
+}
+.picker-row input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  flex: none;
+  accent-color: var(--main);
+}
+.picker-label {
+  flex: 1;
+  min-width: 0;
+}
+.picker-label .story-sep {
+  margin: 0 7px;
+}
+.picker-todo {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.picker-foot {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--rule);
+}
+.picker-foot .primary-button {
+  padding: 10px 16px;
+}
+
+/* one-click prompts from an open story */
+.story-use {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.story-use-action {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.story-use-action .inline-error {
+  text-align: left;
+  margin: 0;
+}
+.story-use .copy {
+  background: var(--surface);
+  padding: 7px 12px;
+}
+.story-use .copy:hover {
+  background: var(--main);
+}
+
+/* marks a prompt that reads the story bank */
+.bank-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--main);
+  width: fit-content;
+}
+.bank-tag::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--main);
+}
+.card-what + .bank-tag {
+  margin-top: 8px;
+}
+.chat .run-context {
+  margin: -6px 0 2px;
+}
+
+@media (max-width: 600px) {
+  .run-context {
+    flex-direction: column;
+    gap: 6px;
+  }
+  .run-context-list {
+    flex-direction: column;
+  }
+  .composer-row {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .composer-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

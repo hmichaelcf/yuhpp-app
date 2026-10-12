@@ -2,6 +2,11 @@
 // progress count) and the browser (the bank itself), so both agree on which
 // spellings are the same theme. No server-only imports here.
 
+/** "Upwork | Lead Scoring Overhaul", or just the name when there is no company. */
+export function storyLabel(s: { company: string | null; title: string }): string {
+  return s.company?.trim() ? `${s.company.trim()} | ${s.title}` : s.title;
+}
+
 /** "ownership, Delivering results" becomes ["ownership", "Delivering results"]. */
 export function splitThemes(themes: string | null | undefined): string[] {
   return themes ? themes.split(",").map((t) => t.trim().replace(/\s+/g, " ")).filter(Boolean) : [];

@@ -3,8 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import CopyButton from "./CopyButton";
+import StartRunButton from "./StartRunButton";
 import { callApi } from "@/lib/client-api";
-import { groupByTheme, splitThemes, themeHeading, themeKey } from "@/lib/story-themes";
+import { groupByTheme, splitThemes, storyLabel, themeHeading, themeKey } from "@/lib/story-themes";
 
 // The story bank. Adding a story: company, story name, the themes it covers,
 // then Situation, Task, Action, and Result written as one section. Reading the
@@ -51,10 +52,8 @@ function writtenParts(s: Draft): number {
   return PARTS.filter((p) => s[p.key]?.trim()).length;
 }
 
-/** "Upwork | Lead Scoring Overhaul", or just the name when there is no company. */
-function storyLabel(s: Pick<Draft, "company" | "title">): string {
-  return s.company?.trim() ? `${s.company.trim()} | ${s.title}` : s.title;
-}
+/** A prompt an open story can start with one click (see STORY_ACTIONS). */
+export type StoryAction = { promptKey: string; label: string; title: string };
 
 /** Plain text of a story, for pasting into a prompt or a document. */
 function storyText(s: Draft): string {
@@ -234,7 +233,17 @@ function StoryForm({
 
 // ---------- one story, opened ----------
 
-function StoryRead({ s, onEdit, onRemoved }: { s: StoryRow; onEdit: () => void; onRemoved: () => void }) {
+function StoryRead({
+  s,
+  actions,
+  onEdit,
+  onRemoved,
+}: {
+  s: StoryRow;
+  actions: StoryAction[];
+  onEdit: () => void;
+  onRemoved: () => void;
+}) {
   const router = useRouter();
   const [error, setError] = useState("");
   const themes = splitThemes(s.themes).map(themeHeading);
@@ -273,6 +282,22 @@ function StoryRead({ s, onEdit, onRemoved }: { s: StoryRow; onEdit: () => void; 
             ))}
           </p>
         ) : null}
+        {actions.length ? (
+          <div className="story-use">
+            <span className="story-themes-label">Use it</span>
+            {actions.map((a) => (
+              <StartRunButton
+                key={a.promptKey}
+                promptKey={a.promptKey}
+                storyId={s.id}
+                label={a.label}
+                title={a.title}
+                buttonClass="copy"
+                className="story-use-action"
+              />
+            ))}
+          </div>
+        ) : null}
         {error ? <p className="inline-error">{error}</p> : null}
         <div className="row-actions">
           <CopyButton text={storyText(s)} label="Copy story" className="text-button" />
@@ -290,7 +315,16 @@ function StoryRead({ s, onEdit, onRemoved }: { s: StoryRow; onEdit: () => void; 
 
 // ---------- the bank ----------
 
-export default function StoryBank({ stories, companies }: { stories: StoryRow[]; companies: string[] }) {
+export default function StoryBank({
+  stories,
+  companies,
+  actions = [],
+}: {
+  stories: StoryRow[];
+  companies: string[];
+  /** Prompts an open story can start with one click. */
+  actions?: StoryAction[];
+}) {
   const router = useRouter();
   const uid = useId();
   const { groups, untagged } = groupByTheme(stories);
@@ -478,6 +512,7 @@ export default function StoryBank({ stories, companies }: { stories: StoryRow[];
                             ) : isOpen ? (
                               <StoryRead
                                 s={s}
+                                actions={actions}
                                 onEdit={() => setEditing(key)}
                                 onRemoved={() => {
                                   setOpenStory(null);

@@ -4,6 +4,7 @@ import { ClaudeError, streamTurn, turnCost } from "@/lib/claude";
 import { buildSystem, wantsWebSearch } from "@/lib/frame";
 import {
   getRun,
+  markStoryBankSeen,
   promptBodyForRun,
   recordTurn,
   runMessages,
@@ -13,6 +14,8 @@ import {
 import { currentResume, savedOnDate } from "@/lib/resumes";
 import { currentMember } from "@/lib/session";
 import { loadSettings } from "@/lib/settings";
+import { bankChanges, loadStoryBankFrame } from "@/lib/story-frame";
+import { readsStoryBank } from "@/lib/story-prompts";
 import { DONE, ERROR_PREFIX, KEEPALIVE, clean, statusLine } from "@/lib/stream-protocol";
 
 export const dynamic = "force-dynamic";
@@ -74,15 +77,20 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
   const promptBody = await promptBodyForRun(DB, run.prompt_id);
   if (!promptBody) return NextResponse.json({ error: "unknown_prompt" }, { status: 404 });
 
-  const [history, resume] = await Promise.all([
+  // Prompts that ask for stories read the member's story bank, as saved right
+  // now, so an edit in the bank reaches the run on its next message.
+  const [history, resume, storyBank] = await Promise.all([
     runMessages(DB, run.id),
     currentResume(DB, member.id),
+    readsStoryBank(run.prompt_name) ? loadStoryBankFrame(DB, member.id, settings) : Promise.resolve(undefined),
   ]);
+  const changes = storyBank ? bankChanges(run.story_bank_seen, storyBank) : null;
   const system = buildSystem(
     run.prompt_name,
     promptBody,
     new Date(),
     resume ? { text: resume.text, savedOn: savedOnDate(resume.created_at) } : null,
+    storyBank ? { ...storyBank, changes } : undefined,
   );
   const messages = mergeTurns([
     ...history.map((m) => ({ role: m.role, content: m.content })),
@@ -103,6 +111,7 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
       // First byte right away, then a keepalive every few seconds.
       send(KEEPALIVE);
       const keepalive = setInterval(() => send(KEEPALIVE), KEEPALIVE_MS);
+      if (changes) send(statusLine("Reading your updated story bank"));
 
       let streamed = "";
       try {
@@ -135,6 +144,8 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
         }
 
         await saveExchange(DB, run.id, content, reply);
+        // The next message compares the bank with what this one read.
+        if (storyBank) await markStoryBankSeen(DB, run.id, JSON.stringify(storyBank.seen));
         send(DONE);
         await recordTurn(DB, run.id, {
           ...result.usage,
@@ -156,6 +167,7 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
           // Part of a reply arrived: keep it, mark it, and let them continue.
           const tail = "\n\n*The reply was cut off. Send \"continue\" to pick up where it stopped.*";
           await saveExchange(DB, run.id, content, streamed + tail).catch(() => undefined);
+          if (storyBank) await markStoryBankSeen(DB, run.id, JSON.stringify(storyBank.seen)).catch(() => undefined);
           send(tail + DONE);
         }
       } finally {

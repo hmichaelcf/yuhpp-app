@@ -10,7 +10,25 @@ const ERRORS: Record<string, string> = {
   signed_out: "Your session ended. Sign in again to continue.",
 };
 
-export default function StartRunButton({ promptKey }: { promptKey: string }) {
+/**
+ * Starts a run of a prompt and opens it. With `storyId`, the run opens with a
+ * first message that names that story from the member's bank, ready to send.
+ */
+export default function StartRunButton({
+  promptKey,
+  storyId,
+  label = "Start",
+  title,
+  buttonClass = "primary-button inline",
+  className = "start-run",
+}: {
+  promptKey: string;
+  storyId?: number;
+  label?: string;
+  title?: string;
+  buttonClass?: string;
+  className?: string;
+}) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,20 +45,21 @@ export default function StartRunButton({ promptKey }: { promptKey: string }) {
       const data = (await res.json().catch(() => ({}))) as { runId?: string; error?: string };
       if (!res.ok || !data.runId) {
         setError(ERRORS[data.error ?? ""] ?? "That did not start. Please try again.");
+        setBusy(false);
         return;
       }
-      router.push(`/run/${data.runId}`);
+      // Stays "Starting" until the run page replaces this one.
+      router.push(storyId ? `/run/${data.runId}?story=${storyId}` : `/run/${data.runId}`);
     } catch {
       setError("That did not start. Check your connection and try again.");
-    } finally {
       setBusy(false);
     }
   }
 
   return (
-    <div className="start-run">
-      <button type="button" className="primary-button inline" onClick={start} disabled={busy}>
-        {busy ? "Starting" : "Start"}
+    <div className={className}>
+      <button type="button" className={buttonClass} onClick={start} disabled={busy} title={title}>
+        {busy ? "Starting" : label}
       </button>
       {error ? <p className="inline-error">{error}</p> : null}
     </div>
