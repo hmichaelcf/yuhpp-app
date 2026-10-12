@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { bindings } from "@/lib/cloudflare";
 import { hasSecret } from "@/lib/config";
 import { fetchMemberEmail, MemberstackUnavailable, verifyMemberToken } from "@/lib/memberstack-server";
-import { upsertMember } from "@/lib/members";
+import { cleanName, upsertMember } from "@/lib/members";
 import {
   SESSION_COOKIE,
   SESSION_TTL_SECONDS,
@@ -17,7 +17,9 @@ export const dynamic = "force-dynamic";
 /**
  * POST /app/api/session
  * Exchanges a Memberstack token (Authorization: Bearer ...) for a Yuhpp
- * session cookie. Body: { consentTerms?: boolean, consentResearch?: boolean }
+ * session cookie. Body: { consentTerms?: boolean, consentResearch?: boolean,
+ * firstName?: string, lastName?: string }. Names come only from the sign-up
+ * form; a sign-in sends none and leaves stored names as they are.
  */
 export async function POST(request: Request) {
   if (!hasSecret("MEMBERSTACK_SECRET_KEY")) {
@@ -46,6 +48,8 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as {
     consentTerms?: unknown;
     consentResearch?: unknown;
+    firstName?: unknown;
+    lastName?: unknown;
   };
   const { DB } = await bindings();
   await upsertMember(DB, {
@@ -53,6 +57,8 @@ export async function POST(request: Request) {
     email: await fetchMemberEmail(memberId),
     consentTerms: body.consentTerms === true,
     consentResearch: body.consentResearch === true,
+    firstName: cleanName(body.firstName),
+    lastName: cleanName(body.lastName),
   });
 
   const sessionId = await createSession(memberId);

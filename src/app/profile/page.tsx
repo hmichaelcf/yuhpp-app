@@ -33,7 +33,7 @@ export default async function ProfilePage() {
 
         <section className="admin-block" id="name">
           <p className="section-label">Your name</p>
-          <NameForm initial={member.first_name ?? ""} />
+          <NameForm first={member.first_name ?? ""} last={member.last_name ?? ""} />
         </section>
 
         <p className="aside">

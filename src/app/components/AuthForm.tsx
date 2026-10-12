@@ -14,12 +14,25 @@ const SESSION_ERRORS: Record<string, string> = {
   not_configured: "Sign-in is not set up yet on this server.",
 };
 
+type SessionExtras = {
+  terms: boolean;
+  research: boolean;
+  /** Sent only from the sign-up form. */
+  firstName?: string;
+  lastName?: string;
+};
+
 /** Swaps a Memberstack sign-in for a Yuhpp session. Returns an error message or null. */
-async function startSession(token: string, consent: { terms: boolean; research: boolean }) {
+async function startSession(token: string, extras: SessionExtras) {
   const res = await fetch(appPath("/api/session"), {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ consentTerms: consent.terms, consentResearch: consent.research }),
+    body: JSON.stringify({
+      consentTerms: extras.terms,
+      consentResearch: extras.research,
+      firstName: extras.firstName,
+      lastName: extras.lastName,
+    }),
   }).catch(() => null);
   if (!res) return "We could not reach Yuhpp. Check your connection and try again.";
   if (res.ok) return null;
@@ -30,6 +43,8 @@ async function startSession(token: string, consent: { terms: boolean; research: 
 export default function AuthForm() {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("signin");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [terms, setTerms] = useState(false);
@@ -59,6 +74,10 @@ export default function AuthForm() {
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+    if (mode === "signup" && (!firstName.trim() || !lastName.trim())) {
+      setError("Please add your first and last name.");
+      return;
+    }
     if (mode === "signup" && !terms) {
       setError("Please accept the terms to create your account.");
       return;
@@ -81,7 +100,12 @@ export default function AuthForm() {
         setError("Your sign-in could not be confirmed. Please try again.");
         return;
       }
-      const failure = await startSession(token, { terms, research });
+      const failure = await startSession(
+        token,
+        mode === "signup"
+          ? { terms, research, firstName: firstName.trim(), lastName: lastName.trim() }
+          : { terms, research },
+      );
       if (failure) {
         setError(failure);
         return;
@@ -136,6 +160,32 @@ export default function AuthForm() {
       </div>
 
       <form className="auth-form" onSubmit={submit} noValidate>
+        {signup ? (
+          <div className="name-row">
+            <label className="field">
+              <span>First name</span>
+              <input
+                type="text"
+                autoComplete="given-name"
+                required
+                maxLength={60}
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+              />
+            </label>
+            <label className="field">
+              <span>Last name</span>
+              <input
+                type="text"
+                autoComplete="family-name"
+                required
+                maxLength={60}
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+              />
+            </label>
+          </div>
+        ) : null}
         <label className="field">
           <span>Email</span>
           <input
