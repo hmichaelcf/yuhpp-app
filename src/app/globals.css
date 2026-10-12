@@ -3679,3 +3679,20 @@ a.primary-button {
 .md .yb .yb-error {
   margin-top: 4px;
 }
+
+/* ---------- sign-up: first and last name side by side ---------- */
+.name-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+.name-row .field,
+.name-row input {
+  min-width: 0;
+  width: 100%;
+}
+@media (max-width: 420px) {
+  .name-row {
+    grid-template-columns: 1fr;
+  }
+}

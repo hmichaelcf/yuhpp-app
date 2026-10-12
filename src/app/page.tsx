@@ -131,7 +131,7 @@ export default async function Home() {
           <>
             {" "}
             <Link href="/profile#name" className="quiet-link">
-              Add your first name
+              Add your name
             </Link>
           </>
         )}

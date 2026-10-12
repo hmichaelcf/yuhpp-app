@@ -153,6 +153,11 @@ https://claude.ai/code/artifact/ec5dc14b-50cc-4241-945a-872c330beb3e
 - **Positioning order** (2026-10-12): the resume prompts run Experience Story
   Builder, then Resume Bullet Refinement, then Resume Value Builder, which
   summarizes the finished bullets, as methodology map v1.3 orders them.
+- **Sign-up collects first and last name** (2026-10-12): both are required on
+  the Create account form and saved to `members.first_name` and
+  `members.last_name` (migration 0011) when the session starts. Sign-in sends
+  no names, so it never clears them. Members edit both on /app/profile. Names
+  live only in Yuhpp's database, not in Memberstack.
 - **The route map is code** (`src/lib/route-map.ts`): rail stops, phase copy
   from the guide, and which prompts sit in each phase, listed by sheet name.
   A renamed prompt drops off its phase page until the name is updated there.
@@ -293,7 +298,7 @@ src/app/                pages and API routes (App Router)
   api/admin/prompts/    /app/api/admin/prompts: CSV upload (admins only)
   api/runs/             start a run; [id]/messages streams a turn; [id]/close
   api/profile/resume/   POST saves the resume as text; DELETE removes it
-  api/profile/name/     POST sets the first name the home page greets
+  api/profile/name/     POST sets the member's first and last name
   api/bullets/ api/stories/ api/searches/   add, edit, remove (member-scoped)
   api/experiences/[id]  PATCH fixes a bullet bank role's title, company, dates
   api/weekly/           PUT saves one week's numbers; DELETE removes a week

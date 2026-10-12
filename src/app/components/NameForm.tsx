@@ -4,11 +4,12 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { callApi } from "@/lib/client-api";
 
-// The first name the workspace greets the member by.
+// The member's first and last name. The home page greets them by first name.
 
-export default function NameForm({ initial }: { initial: string }) {
+export default function NameForm({ first, last }: { first: string; last: string }) {
   const router = useRouter();
-  const [name, setName] = useState(initial);
+  const [firstName, setFirstName] = useState(first);
+  const [lastName, setLastName] = useState(last);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
 
@@ -16,7 +17,7 @@ export default function NameForm({ initial }: { initial: string }) {
     e.preventDefault();
     setBusy(true);
     setNote("");
-    const r = await callApi("POST", "/api/profile/name", { firstName: name });
+    const r = await callApi("POST", "/api/profile/name", { firstName, lastName });
     setBusy(false);
     setNote(r.ok ? "Saved." : r.message);
     if (r.ok) router.refresh();
@@ -26,7 +27,21 @@ export default function NameForm({ initial }: { initial: string }) {
     <form className="inline-form name-form" onSubmit={save}>
       <label className="field">
         <span>First name</span>
-        <input value={name} onChange={(e) => setName(e.target.value)} maxLength={40} autoComplete="given-name" />
+        <input
+          value={firstName}
+          onChange={(e) => setFirstName(e.target.value)}
+          maxLength={60}
+          autoComplete="given-name"
+        />
+      </label>
+      <label className="field">
+        <span>Last name</span>
+        <input
+          value={lastName}
+          onChange={(e) => setLastName(e.target.value)}
+          maxLength={60}
+          autoComplete="family-name"
+        />
       </label>
       <button type="submit" className="primary-button inline" disabled={busy}>
         {busy ? "Saving" : "Save"}
