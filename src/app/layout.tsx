@@ -7,9 +7,10 @@ export const metadata: Metadata = {
 };
 
 // Fonts load from Google Fonts with a stylesheet link rather than next/font,
-// so builds never depend on downloading font files.
+// so builds never depend on downloading font files. Open Sans is the resume
+// template's face.
 const FONTS_URL =
-  "https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..500&family=IBM+Plex+Mono:wght@400;500;600&display=swap";
+  "https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..500&family=IBM+Plex+Mono:wght@400;500;600&family=Open+Sans:wght@300;400;600&display=swap";
 
 export default function RootLayout({
   children,

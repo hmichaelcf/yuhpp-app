@@ -10,6 +10,7 @@ import {
   saveResume,
   uploadKind,
 } from "@/lib/resumes";
+import { keepAliveJson } from "@/lib/keepalive";
 import { currentMember } from "@/lib/session";
 import { loadSettings } from "@/lib/settings";
 
@@ -84,47 +85,8 @@ export async function POST(request: Request) {
     }
   };
 
+  // Reading a PDF can take longer than Webflow Cloud allows a silent response.
   return keepAliveJson(work);
-}
-
-/**
- * Reading a PDF can take longer than the 20 seconds Webflow Cloud allows a
- * silent response, so the result is streamed: a space right away and every
- * few seconds while the work runs (JSON ignores leading whitespace), then
- * the JSON. The status is always 200; the body's "ok" says how it went.
- */
-function keepAliveJson(work: () => Promise<Record<string, unknown>>): Response {
-  const encoder = new TextEncoder();
-  const stream = new ReadableStream<Uint8Array>({
-    async start(controller) {
-      const send = (text: string) => {
-        try {
-          controller.enqueue(encoder.encode(text));
-        } catch {
-          // The browser went away; finish the work anyway.
-        }
-      };
-      send(" ");
-      const timer = setInterval(() => send(" "), 5_000);
-      try {
-        send(JSON.stringify(await work()));
-      } finally {
-        clearInterval(timer);
-        try {
-          controller.close();
-        } catch {
-          // already closed
-        }
-      }
-    },
-  });
-  return new Response(stream, {
-    headers: {
-      // event-stream tells proxies not to buffer the keepalive spaces.
-      "Content-Type": "text/event-stream; charset=utf-8",
-      "Cache-Control": "no-store",
-    },
-  });
 }
 
 /** DELETE /app/api/profile/resume  removes every saved version. */

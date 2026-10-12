@@ -17,6 +17,8 @@ export type RunRow = {
   prompt_description: string;
   /** What this run last read from the story bank (see story-frame.ts). */
   story_bank_seen: string | null;
+  /** A fingerprint of the resume this run last read. */
+  resume_seen: string | null;
 };
 
 export type MessageRow = { id: number; role: "user" | "assistant"; content: string };
@@ -64,7 +66,7 @@ export async function createRun(
 export async function getRun(db: D1Database, runId: string, memberId: string): Promise<RunRow | null> {
   return db
     .prepare(
-      `SELECT r.id, r.prompt_id, r.status, r.model, r.turns, r.cost_usd, r.created_at, r.story_bank_seen,
+      `SELECT r.id, r.prompt_id, r.status, r.model, r.turns, r.cost_usd, r.created_at, r.story_bank_seen, r.resume_seen,
               p.key AS prompt_key, p.name AS prompt_name, p.description AS prompt_description
        FROM runs r JOIN prompts p ON p.id = r.prompt_id
        WHERE r.id = ?1 AND r.member_id = ?2`,
@@ -77,7 +79,7 @@ export async function recentRuns(db: D1Database, memberId: string, limit = 8): P
   return (
     await db
       .prepare(
-        `SELECT r.id, r.prompt_id, r.status, r.model, r.turns, r.cost_usd, r.created_at, r.story_bank_seen,
+        `SELECT r.id, r.prompt_id, r.status, r.model, r.turns, r.cost_usd, r.created_at, r.story_bank_seen, r.resume_seen,
                 p.key AS prompt_key, p.name AS prompt_name, p.description AS prompt_description
          FROM runs r JOIN prompts p ON p.id = r.prompt_id
          WHERE r.member_id = ?1 AND r.turns > 0
@@ -150,6 +152,11 @@ export async function recordTurn(
 /** Records what the run read from the story bank, once a turn that read it is saved. */
 export async function markStoryBankSeen(db: D1Database, runId: string, seen: string): Promise<void> {
   await db.prepare("UPDATE runs SET story_bank_seen = ?2 WHERE id = ?1").bind(runId, seen).run();
+}
+
+/** Records a fingerprint of the resume a saved turn read. */
+export async function markResumeSeen(db: D1Database, runId: string, seen: string): Promise<void> {
+  await db.prepare("UPDATE runs SET resume_seen = ?2 WHERE id = ?1").bind(runId, seen).run();
 }
 
 export async function closeRun(db: D1Database, runId: string, memberId: string): Promise<boolean> {

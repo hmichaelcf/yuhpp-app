@@ -2839,3 +2839,843 @@ a.link-button {
     justify-content: flex-end;
   }
 }
+
+/* ---------- resume record and search brief (Phases 02 and 03) ---------- */
+a.primary-button {
+  display: inline-block;
+  text-decoration: none;
+  text-align: center;
+}
+.primary-button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* What a prompt card reads and saves */
+.flow-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.flow-tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 1px 9px;
+}
+.flow-tag.writes {
+  color: var(--main);
+  border-color: var(--main);
+}
+
+/* The resume panel (Positioning) and the brief panel (Search and outreach) */
+.resume-panel,
+.brief-panel {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 24px 26px;
+  margin: 26px 0 8px;
+}
+.brief-panel {
+  border-color: var(--main);
+  scroll-margin-top: 24px;
+}
+.resume-panel-eyebrow {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--main);
+  margin: 0 0 8px;
+}
+.resume-panel-title {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 27px;
+  line-height: 1.18;
+  letter-spacing: -0.01em;
+  margin: 0 0 10px;
+}
+.resume-panel-title em {
+  font-style: italic;
+  color: var(--main);
+}
+.resume-panel-lede {
+  color: var(--ink-2);
+  margin: 0 0 16px;
+  max-width: 62ch;
+}
+.resume-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 14px;
+  color: var(--ink-2);
+  margin-bottom: 8px;
+}
+.resume-progress .progress-track {
+  flex: 1 1 200px;
+}
+.resume-progress b {
+  color: var(--ink);
+}
+.resume-panel-actions {
+  margin-top: 18px;
+}
+
+.section-status {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  border-top: 1px solid var(--rule);
+}
+.section-status li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.ss-name {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.ss-detail {
+  font-weight: 400;
+  color: var(--ink-3);
+}
+.ss-source {
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+.ss-pill {
+  justify-self: end;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  padding: 3px 8px;
+}
+.ss-pill.ready {
+  background: var(--main-soft);
+  color: var(--main);
+}
+.ss-pill.needs {
+  background: #f8e7b9;
+  color: #6b4e0e;
+}
+.ss-pill.optional {
+  background: var(--paper);
+  color: var(--ink-2);
+}
+
+.resume-import {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+/* /app/resume */
+.resume-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+  gap: 28px;
+  align-items: start;
+  margin-bottom: 12px;
+}
+.resume-preview-wrap {
+  min-width: 0;
+}
+.resume-side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.resume-card {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 18px 20px;
+}
+.resume-card.warn {
+  border-color: #c9a24a;
+}
+.resume-card .section-label {
+  margin-bottom: 10px;
+}
+.resume-card .aside {
+  font-size: 14.5px;
+}
+.fit-check {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--main);
+  margin: 4px 0 0;
+}
+.fit-check.warn {
+  color: #6b4e0e;
+  background: #fbecc4;
+  padding: 8px 10px;
+  border-radius: 2px;
+  font-family: var(--sans);
+  font-size: 13.5px;
+  letter-spacing: 0;
+}
+.resume-bank-note {
+  margin-top: 14px;
+}
+.publish-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.publish-choice {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 12px 14px;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  cursor: pointer;
+}
+.publish-choice.on {
+  border: 2px solid var(--main);
+  background: var(--main-soft);
+  padding: 11px 13px;
+}
+.publish-choice input {
+  margin: 4px 0 0;
+  accent-color: var(--main);
+}
+.publish-choice b {
+  display: block;
+  font-weight: 600;
+}
+.publish-choice span span {
+  display: block;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+.publish-panel .form-error,
+.publish-panel .form-hint {
+  margin-bottom: 12px;
+}
+.role-gaps {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.role-gap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+}
+.role-gap .field-row {
+  grid-template-columns: 1fr;
+}
+.role-gap-name {
+  margin: 0;
+  font-weight: 600;
+}
+.resume-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.resume-editor fieldset {
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 14px 16px 16px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--surface);
+}
+.resume-editor legend {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  padding: 0 6px;
+}
+
+/* The search brief */
+.brief-hint {
+  margin-bottom: 12px;
+}
+.brief-list {
+  margin: 0 0 14px;
+  border-top: 1px solid var(--rule);
+}
+.brief-list > div {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: 4px 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.brief-list dt {
+  font-weight: 600;
+}
+.brief-list dd {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.brief-empty {
+  color: var(--ink-3);
+}
+.brief-kind {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.brief-chips {
+  display: contents;
+}
+.brief-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+.brief-chip {
+  font-size: 13.5px;
+  background: var(--main-soft);
+  color: var(--main);
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+.brief-chip.outline {
+  background: transparent;
+  border: 1px solid var(--main);
+}
+.brief-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.brief-companies {
+  margin-top: 26px;
+  scroll-margin-top: 24px;
+}
+.company-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.company-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.company-name {
+  margin: 0;
+  font-weight: 600;
+}
+.company-note,
+.company-where {
+  margin: 2px 0 0;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.note.warn-soft {
+  border-left-color: #c9a24a;
+  background: #fdf6e3;
+}
+.note.warn-soft strong {
+  color: var(--ink);
+}
+
+/* Output blocks in a run: save buttons for resume sections, titles, companies */
+.yb {
+  border: 1px solid var(--main);
+  border-radius: 3px;
+  margin: 12px 0;
+  background: var(--surface);
+}
+.yb-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+  padding: 10px 14px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+}
+.yb-label {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--main);
+}
+.yb-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.yb-list {
+  margin: 0;
+  padding: 12px 14px 12px 32px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 2px 20px;
+}
+.yb-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.yb-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--rule);
+}
+.yb-row:last-child {
+  border-bottom: 0;
+}
+.yb-texts {
+  flex: 999 1 300px;
+  min-width: 0;
+}
+.yb-old {
+  margin: 0 0 2px;
+  font-size: 13.5px;
+  color: var(--ink-3);
+  text-decoration: line-through;
+  text-decoration-color: var(--rule);
+}
+.yb-sub {
+  margin: 2px 0 0;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+.yb-new {
+  margin: 0;
+}
+.yb-note {
+  color: var(--ink-2);
+}
+.yb-kind {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.yb-row-actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.yb-role select {
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: 6px 8px;
+  max-width: 240px;
+}
+.yb-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--main);
+}
+.yb-check {
+  fill: none;
+  stroke: var(--main);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.yb-error {
+  text-align: left;
+  max-width: none;
+  margin-top: 4px;
+}
+.yb-foot {
+  margin: 0;
+  padding: 8px 14px 10px;
+  font-size: 13.5px;
+  color: var(--ink-2);
+  border-top: 1px solid var(--rule);
+}
+
+/* ---------- the resume template (.rp-), sizes in points ---------- */
+.rp-doc {
+  font-family: "Open Sans", "Helvetica Neue", Arial, sans-serif;
+  color: #1c1d1e;
+}
+/* Zero specificity, so each .rp- rule below sets its own margins. */
+:where(.rp-doc) :where(p, h2, ul) {
+  margin: 0;
+}
+.rp-page {
+  position: relative;
+  width: 612pt;
+  height: 792pt;
+  background: #fff;
+  overflow: hidden;
+  margin: 0 0 24px;
+  box-shadow: 0 1px 4px rgba(15, 26, 28, 0.14);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.rp-page::before,
+.rp-page::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 5pt;
+  background: #a9c9df;
+}
+.rp-page::before {
+  top: 0;
+}
+.rp-page::after {
+  bottom: 0;
+}
+.rp-left {
+  position: absolute;
+  left: 48pt;
+  width: 340pt;
+}
+.rp-p1-left {
+  top: 40pt;
+}
+.rp-p2-left {
+  top: 39.6pt;
+}
+.rp-right {
+  position: absolute;
+  left: 402pt;
+  width: 172pt;
+}
+.rp-p1-right {
+  top: 137.4pt;
+}
+.rp-p2-right {
+  top: 57.5pt;
+}
+.rp-name {
+  font-family: inherit;
+  font-size: 28pt;
+  font-weight: 600;
+  line-height: 1.32;
+  letter-spacing: -0.005em;
+  color: #1c1d1e;
+}
+.rp-headline {
+  font-size: 16pt;
+  line-height: 22pt;
+  margin-top: 1pt;
+  max-width: 300pt;
+}
+.rp-label {
+  font-size: 9pt;
+  line-height: 12.9pt;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6f777c;
+  margin-left: 7pt;
+}
+.rp-p1-label {
+  margin-top: 12pt;
+}
+.rp-roles {
+  margin-left: 7pt;
+}
+.rp-role:first-child {
+  margin-top: 18.8pt;
+}
+.rp-role + .rp-role {
+  margin-top: 24pt;
+}
+.rp-company {
+  font-size: 12pt;
+  font-weight: 600;
+  line-height: 17.2pt;
+}
+.rp-title {
+  font-size: 11pt;
+  line-height: 15.8pt;
+  margin-top: 1.5pt;
+}
+.rp-dates {
+  font-size: 9pt;
+  line-height: 12.9pt;
+  color: #6f777c;
+  margin-top: 0.8pt;
+}
+.rp-bullets {
+  list-style: none;
+  padding: 0;
+  margin-top: 4.4pt;
+}
+.rp-bullets li {
+  position: relative;
+  font-size: 10pt;
+  line-height: 14.3pt;
+  padding-left: 11pt;
+  text-wrap: pretty;
+}
+.rp-bullets li::before {
+  content: "\2022";
+  position: absolute;
+  left: 4.2pt;
+  top: 0;
+  font-size: 7pt;
+}
+.rp-photo {
+  position: absolute;
+  left: 401pt;
+  top: 43pt;
+  width: 77pt;
+  height: 77pt;
+  border-radius: 50%;
+  background: #d9d9d9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.rp-photo-ph {
+  font-size: 9pt;
+  line-height: 12pt;
+  color: #3e4448;
+  padding: 0 11pt;
+}
+.rp-photo-initials {
+  display: none;
+  font-size: 20pt;
+  font-weight: 600;
+  color: #6f777c;
+}
+.rp-side {
+  font-size: 10pt;
+  line-height: 16pt;
+  color: #6f777c;
+}
+.rp-side-head {
+  font-size: 10pt;
+  font-weight: 600;
+  line-height: 14.3pt;
+  color: #6f777c;
+}
+.rp-side-list {
+  list-style: none;
+  padding: 0;
+  margin-top: 2.7pt;
+}
+.rp-side-list li {
+  font-size: 10pt;
+  line-height: 16pt;
+  color: #6f777c;
+}
+.rp-side-block {
+  margin-top: 28pt;
+}
+.rp-first-block {
+  margin-top: 22pt;
+}
+.rp-p2-right .rp-side-block {
+  margin-top: 23.6pt;
+}
+.rp-refs {
+  margin-top: 2.6pt;
+}
+.rp-ref {
+  font-size: 10pt;
+  line-height: 14.4pt;
+  color: #6f777c;
+}
+.rp-ref + .rp-ref {
+  margin-top: 6pt;
+}
+.rp-note {
+  font-size: 10pt;
+  line-height: 14.4pt;
+  font-weight: 300;
+  color: #6f777c;
+  margin-top: 22pt;
+}
+.rp-edu {
+  position: absolute;
+  left: 48pt;
+  top: 589.6pt;
+  width: 340pt;
+}
+.rp-school {
+  font-size: 12pt;
+  font-weight: 600;
+  line-height: 17.2pt;
+  margin: 4.9pt 0 0 7pt;
+}
+.rp-degree {
+  font-size: 10pt;
+  line-height: 14.4pt;
+  margin: 0.9pt 0 0 7pt;
+}
+.rp-place {
+  font-size: 9pt;
+  line-height: 12.9pt;
+  color: #6f777c;
+  margin: 0.7pt 0 0 7pt;
+}
+.rp-pagenum {
+  position: absolute;
+  right: 38pt;
+  top: 759pt;
+  font-size: 10.5pt;
+  line-height: 14.4pt;
+  color: #6f777c;
+}
+.rp-gap {
+  background: #fbecc4;
+  color: #6b4e0e;
+  border-radius: 2pt;
+  padding: 0 3pt;
+  font-weight: 400;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+/* The preview on /app/resume is the real page, scaled down. */
+.rp-preview {
+  zoom: 0.62;
+}
+@media (max-width: 1180px) {
+  .resume-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .rp-preview {
+    zoom: 0.8;
+  }
+}
+@media (max-width: 600px) {
+  .rp-preview {
+    zoom: 0.4;
+  }
+  .section-status li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .ss-source {
+    grid-row: 2;
+  }
+  .brief-list > div {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* /app/resume/print */
+.print-page {
+  padding: 24px 16px 48px;
+}
+.print-page .rp-doc {
+  width: 612pt;
+  margin: 0 auto;
+}
+.print-bar {
+  max-width: 612pt;
+  margin: 0 auto 20px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px 20px;
+}
+.print-bar p {
+  margin: 0;
+  color: var(--ink-2);
+}
+@media print {
+  @page {
+    size: letter;
+    margin: 0;
+  }
+  html,
+  body {
+    background: #fff !important;
+  }
+  .print-bar {
+    display: none !important;
+  }
+  .print-page {
+    padding: 0;
+  }
+  .rp-page {
+    margin: 0;
+    box-shadow: none;
+    break-after: page;
+  }
+  .rp-page:last-child {
+    break-after: auto;
+  }
+  .rp-gap,
+  .rp-empty-print,
+  .rp-photo-ph {
+    display: none !important;
+  }
+  .rp-photo-initials {
+    display: block;
+  }
+}
+/* Output blocks sit inside a reply's markdown: undo its list and paragraph spacing. */
+.md .yb p,
+.md .yb ul {
+  margin: 0;
+}
+.md .yb .yb-rows {
+  padding: 0;
+}
+.md .yb .yb-list {
+  padding: 12px 14px 12px 32px;
+}
+.md .yb .yb-old {
+  margin-bottom: 2px;
+}
+.md .yb .yb-sub,
+.md .yb .yb-error {
+  margin-top: 4px;
+}

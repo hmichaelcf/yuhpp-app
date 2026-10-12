@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import CopyButton from "./CopyButton";
+import RunBlock, { blockKindOf, type BlockContext } from "./RunBlocks";
 import StoryPicker from "./StoryPicker";
 import { callApi } from "@/lib/client-api";
 import { appPath } from "@/lib/paths";
@@ -26,7 +27,16 @@ const ERRORS: Record<string, string> = {
   signed_out: "Your session ended. Sign in again to continue.",
 };
 
-type HastNode = { type: string; value?: string; children?: HastNode[] };
+type HastNode = {
+  type: string;
+  tagName?: string;
+  value?: string;
+  properties?: { className?: unknown };
+  children?: HastNode[];
+};
+
+/** One thing a run reads, as the "This run reads" box shows it. */
+export type ReadItem = { label: string; detail: string; href: string; link: string; on: boolean };
 
 /** The plain text inside a rendered markdown element. */
 function hastText(node: HastNode | undefined): string {
@@ -58,36 +68,67 @@ function SaveSearchButton({ query, runId }: { query: string; runId: string }) {
   );
 }
 
-function Markdown({ text, saveRunId }: { text: string; saveRunId?: string }) {
+/** What the code-block renderer needs; passed by context so the renderer stays one stable component. */
+type CodeCtx = { saveRunId?: string; blockCtx?: BlockContext; final: boolean };
+const CodeContext = createContext<CodeCtx>({ final: true });
+
+/**
+ * Code blocks get a Copy button, and in a search-building run a Save button
+ * that adds the search to the Outreach page. A step that writes into the
+ * resume or the search brief ends with output blocks (```yuhpp-skills and so
+ * on), shown as save buttons. Defined once, outside any render: a renderer
+ * re-created on every render would remount the blocks and lose what the
+ * member already saved.
+ */
+function CodeBlock({ node, children }: { node?: unknown; children?: React.ReactNode }) {
+  const { saveRunId, blockCtx, final } = useContext(CodeContext);
+  const code = hastText(node as HastNode | undefined).replace(/\n+$/, "");
+  const codeNode = (node as HastNode | undefined)?.children?.find((c) => c.tagName === "code");
+  const kind = blockKindOf(codeNode?.properties?.className);
+  if (kind && blockCtx) return <RunBlock kind={kind} text={code} ctx={blockCtx} final={final} />;
   return (
-    <ReactMarkdown
-      remarkPlugins={[remarkGfm]}
-      components={{
-        a: ({ href, children }) => (
-          <a href={href} target="_blank" rel="noreferrer">
-            {children}
-          </a>
-        ),
-        // Code blocks get a Copy button, and in a search-building run a Save
-        // button that adds the search to the Outreach page.
-        pre: ({ node, children }) => {
-          const code = hastText(node as HastNode | undefined).replace(/\n+$/, "");
-          return (
-            <div className="code-block">
-              <pre>{children}</pre>
-              {code.trim() ? (
-                <div className="code-actions">
-                  <CopyButton text={code} className="text-button" />
-                  {saveRunId ? <SaveSearchButton query={code.trim()} runId={saveRunId} /> : null}
-                </div>
-              ) : null}
-            </div>
-          );
-        },
-      }}
-    >
-      {text}
-    </ReactMarkdown>
+    <div className="code-block">
+      <pre>{children}</pre>
+      {code.trim() ? (
+        <div className="code-actions">
+          <CopyButton text={code} className="text-button" />
+          {saveRunId ? <SaveSearchButton query={code.trim()} runId={saveRunId} /> : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function ExternalLink({ href, children }: { href?: string; children?: React.ReactNode }) {
+  return (
+    <a href={href} target="_blank" rel="noreferrer">
+      {children}
+    </a>
+  );
+}
+
+const MD_COMPONENTS = { a: ExternalLink, pre: CodeBlock };
+const MD_PLUGINS = [remarkGfm];
+
+function Markdown({
+  text,
+  saveRunId,
+  blockCtx,
+  final = true,
+}: {
+  text: string;
+  saveRunId?: string;
+  blockCtx?: BlockContext;
+  /** False while this reply is still streaming in. */
+  final?: boolean;
+}) {
+  const ctx = useMemo(() => ({ saveRunId, blockCtx, final }), [saveRunId, blockCtx, final]);
+  return (
+    <CodeContext.Provider value={ctx}>
+      <ReactMarkdown remarkPlugins={MD_PLUGINS} components={MD_COMPONENTS}>
+        {text}
+      </ReactMarkdown>
+    </CodeContext.Provider>
   );
 }
 
@@ -101,24 +142,50 @@ function bankKey(b: BankSummary | undefined): string {
 }
 
 /**
- * "This run reads": the saved resume and, for prompts that read it, the story
- * bank. The bank part updates on its own when the member comes back to the
- * page after changing the bank somewhere else.
+ * "This run reads": the resume and, for steps that read them, the search
+ * brief, saved companies, and story bank. The bank part updates on its own
+ * when the member comes back to the page after changing the bank somewhere
+ * else.
  */
-function RunContext({ resume, bank, updated }: { resume: string | null; bank?: BankSummary; updated: boolean }) {
+function RunContext({
+  resume,
+  brief,
+  companies,
+  bank,
+  updated,
+}: {
+  resume: ReadItem | null;
+  brief?: ReadItem;
+  companies?: ReadItem;
+  bank?: BankSummary;
+  updated: boolean;
+}) {
   const n = bank?.stories.length ?? 0;
+  const item = (x: ReadItem) => (
+    <li key={x.label} className={x.on ? "ctx on" : "ctx off"}>
+      <span className="ctx-dot" aria-hidden="true" />
+      <span className="ctx-name">{x.label}</span>
+      <span className="ctx-detail">{x.detail}</span>
+      <Link className="ctx-link" href={x.href}>
+        {x.link}
+      </Link>
+    </li>
+  );
   return (
     <div className="run-context">
       <span className="run-context-label">This run reads</span>
       <ul className="run-context-list">
-        <li className={resume ? "ctx on" : "ctx off"}>
-          <span className="ctx-dot" aria-hidden="true" />
-          <span className="ctx-name">Your resume</span>
-          <span className="ctx-detail">{resume ? `saved ${resume}` : "not saved; it will ask if this step needs it"}</span>
-          <Link className="ctx-link" href="/profile">
-            {resume ? "Change" : "Save it"}
-          </Link>
-        </li>
+        {item(
+          resume ?? {
+            label: "Your resume",
+            detail: "not saved; it will ask if this step needs it",
+            href: "/profile",
+            link: "Save it",
+            on: false,
+          },
+        )}
+        {brief ? item(brief) : null}
+        {companies ? item(companies) : null}
         {bank ? (
           <li className={n ? "ctx on" : "ctx off"}>
             <span className="ctx-dot" aria-hidden="true" />
@@ -151,7 +218,9 @@ export default function ChatView({
   initiallyOpen,
   description,
   saveSearches = false,
-  resumeSavedOn,
+  reads,
+  blockCtx,
+  draftFromBrief = false,
   initialBank,
   initialDraft = "",
 }: {
@@ -161,8 +230,12 @@ export default function ChatView({
   description: string;
   /** Offer "Save search" on code blocks (Smart Job Search Builder runs). */
   saveSearches?: boolean;
-  /** When the member's saved resume was saved, or null when there is none. */
-  resumeSavedOn: string | null;
+  /** What this run reads besides the story bank. */
+  reads: { resume: ReadItem | null; brief?: ReadItem; companies?: ReadItem };
+  /** For steps that end with output blocks: what the save buttons need. */
+  blockCtx?: BlockContext;
+  /** The first message was drafted from the search brief. */
+  draftFromBrief?: boolean;
   /** The story bank, for prompts that read it; undefined for the rest. */
   initialBank?: BankSummary;
   /** A first message ready to send, for a run started from a story. */
@@ -344,11 +417,24 @@ export default function ChatView({
   }
 
   const storyCount = bank?.stories.length ?? 0;
-  const loaded = [resumeSavedOn ? "your resume" : "", storyCount ? "your story bank" : ""].filter(Boolean);
+  const loaded = [
+    reads.resume?.on ? (reads.resume.label === "Your resume draft" ? "your resume draft" : "your resume") : "",
+    reads.brief?.on ? "your search brief" : "",
+    reads.companies?.on ? "your saved companies" : "",
+    storyCount ? "your story bank" : "",
+  ].filter(Boolean);
+  const loadedText =
+    loaded.length > 1 ? `${loaded.slice(0, -1).join(", ")} and ${loaded[loaded.length - 1]}` : (loaded[0] ?? "");
 
   return (
     <div className="chat">
-      <RunContext resume={resumeSavedOn} bank={bank} updated={bankUpdated} />
+      <RunContext
+        resume={reads.resume}
+        brief={reads.brief}
+        companies={reads.companies}
+        bank={bank}
+        updated={bankUpdated}
+      />
 
       {messages.length === 0 ? (
         <div className="chat-empty">
@@ -356,9 +442,11 @@ export default function ChatView({
           <p className="aside">
             {loaded.length ? (
               <>
-                {loaded.join(" and ").replace(/^y/, "Y")} {loaded.length > 1 ? "are" : "is"} already loaded, so
-                there is nothing to paste for {loaded.length > 1 ? "them" : "it"}. Start with anything else this
-                step needs; if something is missing, it will ask you.
+                {loadedText.replace(/^y/, "Y")} {loaded.length > 1 ? "are" : "is"} already loaded, so there is
+                nothing to paste for {loaded.length > 1 ? "them" : "it"}.{" "}
+                {draftFromBrief
+                  ? "Your first message is drafted from your search brief; change anything, then send."
+                  : "Start with anything else this step needs; if something is missing, it will ask you."}
                 {storyCount ? " To work with particular stories, use Add stories below." : ""}
               </>
             ) : (
@@ -381,6 +469,8 @@ export default function ChatView({
                     <Markdown
                       text={m.content}
                       saveRunId={saveSearches && !(busy && i === messages.length - 1) ? runId : undefined}
+                      blockCtx={blockCtx}
+                      final={!(busy && i === messages.length - 1)}
                     />
                   </div>
                 ) : null}

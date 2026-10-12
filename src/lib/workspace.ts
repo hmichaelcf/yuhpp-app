@@ -133,7 +133,7 @@ export async function listBullets(db: D1Database, memberId: string): Promise<Bul
 }
 
 /** The member's experience with this role and company, ignoring letter case. */
-async function findExperience(
+export async function findExperience(
   db: D1Database,
   memberId: string,
   role: string | null,

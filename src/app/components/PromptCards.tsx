@@ -3,6 +3,7 @@ import StartRunButton from "./StartRunButton";
 import { shortDate } from "@/lib/dates";
 import { nameKey } from "@/lib/route-map";
 import type { PromptActivity } from "@/lib/runs";
+import { readsLabel, writesLabel } from "@/lib/resume-prompts";
 import { readsStoryBank } from "@/lib/story-prompts";
 
 // A numbered stack of prompt cards, styled like the guide's, with a Start
@@ -38,6 +39,8 @@ export default function PromptCards({
     <ol className={loop ? "cards loop" : "cards"}>
       {items.map((p, i) => {
         const act = activity.get(p.key);
+        const writes = writesLabel(p.name);
+        const reads = readsLabel(p.name);
         return (
           <li key={p.key} className={act ? "card has-run" : "card"}>
             <div className="card-head">
@@ -46,6 +49,12 @@ export default function PromptCards({
                 <span className="card-name">{p.name}</span>
                 <span className="card-what">{p.description}</span>
                 {bankTag && readsStoryBank(p.name) ? <span className="bank-tag">Reads your story bank</span> : null}
+                {reads || writes ? (
+                  <span className="flow-tags">
+                    {reads ? <span className="flow-tag">Reads {reads}</span> : null}
+                    {writes ? <span className="flow-tag writes">Saves to {writes}</span> : null}
+                  </span>
+                ) : null}
                 {act ? (
                   <span className="card-last">
                     {act.count === 1 ? "Run once" : `Run ${act.count} times`}, last {shortDate(act.lastAt)}.{" "}

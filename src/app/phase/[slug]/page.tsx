@@ -2,11 +2,15 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import AppShell from "../../components/AppShell";
 import PromptCards, { catalogMap } from "../../components/PromptCards";
+import ResumePanel from "../../components/ResumePanel";
 import Rich from "../../components/Rich";
+import SearchBriefPanel from "../../components/SearchBriefPanel";
 import { isAdmin } from "@/lib/admin";
 import { bindings } from "@/lib/cloudflare";
 import { PHASES, phaseBySlug, type Block, type Table } from "@/lib/route-map";
+import { resumeState } from "@/lib/resume-record";
 import { activityByPrompt, promptCatalog } from "@/lib/runs";
+import { listCompanies, loadBrief } from "@/lib/search-brief";
 import { currentMember } from "@/lib/session";
 import { loadSettings, type Settings } from "@/lib/settings";
 
@@ -81,6 +85,19 @@ export default async function PhasePage({ params }: { params: Promise<{ slug: st
     activityByPrompt(DB, member.id),
   ]);
   const catalog = catalogMap(catalogRows);
+
+  // Phases 02 and 03 show the member's resume and search brief.
+  const needs = new Set(phase.blocks.map((b) => b.t));
+  const state = needs.has("resume") || needs.has("brief") ? await resumeState(DB, member.id, member.email) : null;
+  const [brief, companies] = needs.has("brief") && state
+    ? await Promise.all([
+        loadBrief(DB, member.id, settings, {
+          location: state.draft.data.contact.location,
+          tools: state.draft.data.tools,
+        }),
+        listCompanies(DB, member.id),
+      ])
+    : [null, []];
   const fill = (text: string) =>
     text.replace("{exceptions}", String(settings.number("strategic_exceptions_per_week", 2)));
 
@@ -121,6 +138,12 @@ export default async function PhasePage({ params }: { params: Promise<{ slug: st
         );
       case "table":
         return <RuleTable key={i} table={b.table} />;
+      case "resume":
+        return state ? (
+          <ResumePanel key={i} state={state} bulletMax={settings.number("bullet_max_chars", 75)} />
+        ) : null;
+      case "brief":
+        return state && brief ? <SearchBriefPanel key={i} brief={brief} companies={companies} state={state} /> : null;
       case "checklist":
         return (
           <div key={i} className="gate plainbox">

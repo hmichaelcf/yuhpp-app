@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import AppShell from "../components/AppShell";
 import NameForm from "../components/NameForm";
@@ -35,6 +36,12 @@ export default async function ProfilePage() {
           <NameForm initial={member.first_name ?? ""} />
         </section>
 
+        <p className="aside">
+          In Positioning, Yuhpp rebuilds this resume in its template, section by section, and you publish the result
+          from <Link href="/resume">Your resume</Link>. Uploading a new file here makes it the version every prompt
+          reads again.
+        </p>
+
         <section className="admin-block">
           <p className="section-label">{resume ? "Replace your resume" : "Add your resume"}</p>
           <ResumeForm hasResume={!!resume} />
@@ -44,10 +51,19 @@ export default async function ProfilePage() {
           <section className="admin-block">
             <p className="section-label">What Yuhpp reads</p>
             <p className="aside">
-              Saved {savedOnDate(resume.created_at)} from{" "}
-              <strong>{resume.file_name ?? "pasted text"}</strong>. This is the exact text every
-              prompt receives. If anything looks garbled or missing, replace it with a Word file or
-              paste the text.
+              {resume.source === "built" ? (
+                <>
+                  Published {savedOnDate(resume.created_at)} from <Link href="/resume">your resume in Yuhpp</Link>.
+                  This is the exact text every prompt receives.
+                </>
+              ) : (
+                <>
+                  Saved {savedOnDate(resume.created_at)} from{" "}
+                  <strong>{resume.file_name ?? "pasted text"}</strong>. This is the exact text every
+                  prompt receives. If anything looks garbled or missing, replace it with a Word file or
+                  paste the text.
+                </>
+              )}
             </p>
             <pre className="resume-preview">{resume.text}</pre>
           </section>

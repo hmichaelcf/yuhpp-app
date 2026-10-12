@@ -2,8 +2,11 @@ import { NextResponse } from "next/server";
 import { bindings } from "@/lib/cloudflare";
 import { ClaudeError, streamTurn, turnCost } from "@/lib/claude";
 import { buildSystem, wantsWebSearch } from "@/lib/frame";
+import { fingerprint } from "@/lib/resume-shape";
+import { loadRunReads } from "@/lib/run-reads";
 import {
   getRun,
+  markResumeSeen,
   markStoryBankSeen,
   promptBodyForRun,
   recordTurn,
@@ -11,7 +14,6 @@ import {
   runsUsedThisMonth,
   saveExchange,
 } from "@/lib/runs";
-import { currentResume, savedOnDate } from "@/lib/resumes";
 import { currentMember } from "@/lib/session";
 import { loadSettings } from "@/lib/settings";
 import { bankChanges, loadStoryBankFrame } from "@/lib/story-frame";
@@ -78,19 +80,29 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
   if (!promptBody) return NextResponse.json({ error: "unknown_prompt" }, { status: 404 });
 
   // Prompts that ask for stories read the member's story bank, as saved right
-  // now, so an edit in the bank reaches the run on its next message.
-  const [history, resume, storyBank] = await Promise.all([
+  // now, so an edit in the bank reaches the run on its next message. The
+  // resume, search brief, and saved companies are read fresh the same way.
+  const [history, reads, storyBank] = await Promise.all([
     runMessages(DB, run.id),
-    currentResume(DB, member.id),
+    loadRunReads(DB, member, run.prompt_name, settings),
     readsStoryBank(run.prompt_name) ? loadStoryBankFrame(DB, member.id, settings) : Promise.resolve(undefined),
   ]);
   const changes = storyBank ? bankChanges(run.story_bank_seen, storyBank) : null;
+  const resumeKey = reads.resume ? fingerprint(reads.resume.text) : null;
+  const resumeChanged = !!(resumeKey && run.resume_seen && run.resume_seen !== resumeKey);
   const system = buildSystem(
     run.prompt_name,
     promptBody,
     new Date(),
-    resume ? { text: resume.text, savedOn: savedOnDate(resume.created_at) } : null,
+    reads.resume ? { text: reads.resume.text, savedOn: reads.resume.savedOn } : null,
     storyBank ? { ...storyBank, changes } : undefined,
+    {
+      resumeIsDraft: reads.resume?.isDraft,
+      resumeChanged,
+      brief: reads.briefText,
+      companies: reads.companiesText,
+      blocks: reads.blocks,
+    },
   );
   const messages = mergeTurns([
     ...history.map((m) => ({ role: m.role, content: m.content })),
@@ -112,6 +124,7 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
       send(KEEPALIVE);
       const keepalive = setInterval(() => send(KEEPALIVE), KEEPALIVE_MS);
       if (changes) send(statusLine("Reading your updated story bank"));
+      else if (resumeChanged) send(statusLine("Reading your updated resume"));
 
       let streamed = "";
       try {
@@ -144,8 +157,9 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
         }
 
         await saveExchange(DB, run.id, content, reply);
-        // The next message compares the bank with what this one read.
+        // The next message compares the bank and the resume with what this one read.
         if (storyBank) await markStoryBankSeen(DB, run.id, JSON.stringify(storyBank.seen));
+        if (resumeKey) await markResumeSeen(DB, run.id, resumeKey);
         send(DONE);
         await recordTurn(DB, run.id, {
           ...result.usage,
@@ -168,6 +182,7 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
           const tail = "\n\n*The reply was cut off. Send \"continue\" to pick up where it stopped.*";
           await saveExchange(DB, run.id, content, streamed + tail).catch(() => undefined);
           if (storyBank) await markStoryBankSeen(DB, run.id, JSON.stringify(storyBank.seen)).catch(() => undefined);
+          if (resumeKey) await markResumeSeen(DB, run.id, resumeKey).catch(() => undefined);
           send(tail + DONE);
         }
       } finally {
