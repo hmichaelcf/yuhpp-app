@@ -35,6 +35,12 @@ https://claude.ai/code/artifact/ec5dc14b-50cc-4241-945a-872c330beb3e
   is a page (/app/phase/[slug]) with the guide's copy and every prompt
   runnable in place. Smart Job Search Builder runs get a Save search button on
   each query. Good company is /app/community.
+- **Resume record and search brief (done in code, 2026-10-12, branch
+  `resume-to-search`):** Phase 02 rebuilds the member's resume section by
+  section and publishes it in the Yuhpp resume template (/app/resume, printable
+  at /app/resume/print). Phase 03 runs read the published resume plus a search
+  brief, open with a first message drafted from it, and save titles and
+  companies back. See "Resume record" below.
 - Later phases: onboarding, application loop, interview loop, weekly review and
   practice, beta launch. See the build spec.
 
@@ -93,6 +99,60 @@ https://claude.ai/code/artifact/ec5dc14b-50cc-4241-945a-872c330beb3e
   (`GET /app/api/stories`), and has an Add stories picker that inserts story
   labels. An open story in the bank can start STAR Story Shaper or STAR to
   Bullet Converter with one click (`/run/[id]?story=ID` prefills the message).
+- **Resume record** (2026-10-12): the resume is structured, not one block of
+  text. Roles and bullets are the bullet bank (`experiences`, `bullets`); every
+  other part of the template (name, three headline keywords, contact, Skills &
+  knowledge, Leadership, Tools, Interests, References, Education) is one
+  `resume_profiles` row per member (migration 0010, lists as JSON). The shape
+  and its plain-text form live in `src/lib/resume-shape.ts` (shared by server and
+  browser); loading, saving, and publishing in `src/lib/resume-record.ts`.
+  - **Start from an upload:** "Start from my uploaded resume" (POST
+    `/app/api/resume/import`) has the small model (`extract_model`) read the
+    latest upload into sections (`readResumeSections()` in `claude.ts`,
+    `applyImport()` in `src/lib/resume-import.ts`). It copies, never rewrites;
+    roles the bank already has and profile fields already filled are left
+    alone. Paid, logged in `api_usage` (purpose `resume_import`), capped per day
+    by `resume_imports_daily`.
+  - **Steps write into it with output blocks:** prompts listed in
+    `src/lib/resume-prompts.ts` end their replies with fenced blocks
+    (```yuhpp-skills, -leadership, -bullets, -titles, -companies; the rules are
+    `BLOCK_RULES` in `frame.ts`). The run page renders each as a card with save
+    buttons (`RunBlocks.tsx`): Use in my resume, Replace in resume, Add to
+    resume, Add to brief, Save company. Nothing changes until the member clicks.
+    The code-block renderer in `ChatView` is one module-level component fed by
+    context, because a renderer re-created per render remounts the cards and
+    loses their saved state.
+  - **Draft vs published:** steps that write resume sections read the working
+    draft, with bullet ids (`[b12]`) so a rewrite can name its bullet; every
+    other step reads the current saved resume. Publishing (POST
+    `/app/api/resume/publish`) saves a new `resumes` row with source `built`
+    (the table was rebuilt in migration 0010 to allow it) and the record as
+    JSON, so it is the version every run reads. Publishing needs a name and a
+    company, title, and start date on every role. "Keep my own file" makes the
+    latest upload current again and sets `use_own_file`; searches still get the
+    search brief. `runs.resume_seen` holds a fingerprint of the resume a run
+    last read, so the next turn says when it changed.
+  - **The template:** `ResumeDocument.tsx` with the `.rp-` styles in
+    globals.css, sized in points from "Resume Template.pdf" (Open Sans, two US
+    Letter pages, two roles on page 1). Gaps show in amber on screen and never
+    print. Photos cannot be uploaded (no file storage), so the photo circle
+    says "Upload your headshot here" on screen and prints the member's initials.
+    Download PDF opens /app/resume/print, which uses the browser's Save as PDF.
+- **Search brief** (2026-10-12): one `search_briefs` row per member (target
+  titles strong and stretch, level, location, industries, keywords, posting
+  window), edited on the Search and outreach page. Until saved, location and
+  keywords default from the resume and the window from
+  `search_posted_within_days`. Smart Job Search Builder and Job Search
+  Assistance Process read it in the frame and open with a first message
+  drafted from it (`briefFirstMessage()` in `src/lib/brief-shape.ts`); the
+  frame tells Job Search Assistance Process to check the brief's titles rather
+  than derive new ones. Companies saved from research go in
+  `target_companies`, which Networking Target Finder reads.
+  `src/lib/run-reads.ts` works out what each step reads, for both the run page
+  and the messages route.
+- **Positioning order** (2026-10-12): the resume prompts run Experience Story
+  Builder, then Resume Bullet Refinement, then Resume Value Builder, which
+  summarizes the finished bullets, as methodology map v1.3 orders them.
 - **The route map is code** (`src/lib/route-map.ts`): rail stops, phase copy
   from the guide, and which prompts sit in each phase, listed by sheet name.
   A renamed prompt drops off its phase page until the name is updated there.
@@ -225,6 +285,8 @@ src/app/                pages and API routes (App Router)
   admin/page.tsx        /app/admin: usage, prompt sync, settings (admins only)
   prompts/page.tsx      /app/prompts: pick a prompt and start a run
   profile/page.tsx      /app/profile: save, check, replace, remove the resume
+  resume/page.tsx       /app/resume: the resume in the template; fill in, publish
+  resume/print/         /app/resume/print: the two pages alone, for Save as PDF
   run/[id]/page.tsx     /app/run/[id]: the chat for one run
   api/health/           /app/api/health: the same checks as JSON
   api/session/          /app/api/session: POST starts a session, DELETE ends it
@@ -235,6 +297,9 @@ src/app/                pages and API routes (App Router)
   api/bullets/ api/stories/ api/searches/   add, edit, remove (member-scoped)
   api/experiences/[id]  PATCH fixes a bullet bank role's title, company, dates
   api/weekly/           PUT saves one week's numbers; DELETE removes a week
+  api/resume/           PUT saves resume details; import/, publish/, bullets/
+  api/search-brief/     PUT saves the brief; POST adds one title
+  api/companies/        POST saves a company; [id] DELETE removes one
   components/           AppShell, Rail, Masthead, PromptCards, BulletBank,
                         StoryBank, SavedSearches, WeeklyForm, NameForm,
                         CopyButton, AuthForm, SignOutButton, PromptUpload,
@@ -262,6 +327,14 @@ src/lib/
   stream-protocol.ts    the streamed reply format, shared by server and browser
   route-map.ts          rail stops, phase pages, prompts per phase
   workspace.ts          bullets, roles, stories, saved searches (server only)
+  resume-shape.ts       the resume record's shape, text, and status (shared)
+  resume-record.ts      load, save, publish the resume record (server only)
+  resume-import.ts      writes an upload's sections into the record
+  resume-prompts.ts     which prompts write blocks, read the brief or companies
+  brief-shape.ts        the search brief's shape, text, drafted first message
+  search-brief.ts       the search brief and saved companies (server only)
+  run-reads.ts          what one step reads: resume, brief, companies
+  keepalive.ts          streams a slow JSON response past the 20-second limit
   months.ts             MM/YYYY work dates: typing mask, checks, display
   weekly.ts             weekly logs and progress metrics (server only)
   weekly-fields.ts      the weekly counts and the weekly number line

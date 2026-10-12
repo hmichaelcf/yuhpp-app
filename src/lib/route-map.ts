@@ -59,7 +59,11 @@ export type Block =
   | { t: "note"; tone: "calm" | "warn" | "loop"; v: string }
   | { t: "gate"; num: string; title: string; body: string; criteria?: string[]; table?: Table | "apply" }
   | { t: "table"; table: Table }
-  | { t: "checklist"; items: string[] };
+  | { t: "checklist"; items: string[] }
+  /** The member's resume as Phase 02 builds it (ResumePanel). */
+  | { t: "resume" }
+  /** The search brief and saved companies Phase 03 runs read (SearchBriefPanel). */
+  | { t: "brief" };
 
 export type Phase = {
   slug: string;
@@ -111,8 +115,13 @@ export const PHASES: Phase[] = [
         t: "purpose",
         v: "Build the assets. Every one of them is built against the direction you just set, which is why this phase comes second.",
       },
-      { t: "label", v: "Resume" },
-      { t: "prompts", names: ["Resume Value Builder", "Resume Bullet Refinement", "Experience Story Builder"] },
+      { t: "resume" },
+      { t: "label", v: "Resume: run in this order" },
+      { t: "prompts", names: ["Experience Story Builder", "Resume Bullet Refinement", "Resume Value Builder"] },
+      {
+        t: "aside",
+        v: "Value Builder runs last because it summarizes your finished bullets. Each step offers to save its output into your resume; nothing changes until you accept it.",
+      },
       { t: "label", v: "LinkedIn" },
       { t: "prompts", names: ["LinkedIn Experience Optimizer", "LinkedIn About Architect"] },
       { t: "label", v: "Story bank" },
@@ -122,7 +131,11 @@ export const PHASES: Phase[] = [
         num: "Checkpoint 02",
         title: "Assets ready",
         body: "You need all three of these before you start applying at volume.",
-        criteria: ["A current resume", "A live LinkedIn profile", "Six to eight developed stories covering distinct themes"],
+        criteria: [
+          "Your resume, published in Yuhpp (or your own file, kept as final)",
+          "A live LinkedIn profile",
+          "Six to eight developed stories covering distinct themes",
+        ],
       },
       {
         t: "note",
@@ -141,6 +154,7 @@ export const PHASES: Phase[] = [
         t: "purpose",
         v: "Generate a real pipeline. Two tracks run at the same time, and the second one is the one most people skip.",
       },
+      { t: "brief" },
       { t: "label", v: "Track A: finding roles" },
       { t: "prompts", names: ["Smart Job Search Builder", "Job Search Assistance Process"] },
       { t: "label", v: "Track B: finding people" },

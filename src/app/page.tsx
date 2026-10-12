@@ -51,14 +51,16 @@ export default async function Home() {
 
   const tiles: Tile[] = [
     {
-      href: "/profile",
+      href: resume ? "/resume" : "/profile",
       code: "Phase 02",
       title: "Current resume",
       status: resume
-        ? `Saved ${shortDate(resume.created_at)}, ${sourceLabel(resume.source)}. Every prompt reads it.`
+        ? resume.source === "built"
+          ? `Published ${shortDate(resume.created_at)} in the Yuhpp template. Every prompt reads it.`
+          : `Saved ${shortDate(resume.created_at)}, ${sourceLabel(resume.source)}. Every prompt reads it.`
         : "Not added yet. Save it once and every prompt can read it.",
       done: !!resume,
-      action: resume ? "View or replace" : "Add your resume",
+      action: resume ? (resume.source === "built" ? "Open your resume" : "Rebuild it in the template") : "Add your resume",
     },
     {
       href: "/bullets",

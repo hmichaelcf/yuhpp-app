@@ -9,7 +9,8 @@ import type { Settings } from "./settings";
 export type Resume = {
   id: number;
   file_name: string | null;
-  source: "pdf" | "docx" | "text" | "paste";
+  /** "built": published from the resume record in Yuhpp (see resume-record.ts). */
+  source: "pdf" | "docx" | "text" | "paste" | "built";
   text: string;
   created_at: string;
 };
@@ -21,7 +22,7 @@ export class ResumeProblem extends Error {}
 
 type ReadResult = {
   text: string;
-  source: Resume["source"];
+  source: Exclude<Resume["source"], "built">;
   fileName: string | null;
 };
 
@@ -117,6 +118,7 @@ const SOURCE_LABEL: Record<Resume["source"], string> = {
   docx: "read from a Word file",
   text: "read from a text file",
   paste: "pasted",
+  built: "published in the Yuhpp template",
 };
 
 export function sourceLabel(source: Resume["source"]): string {
@@ -137,7 +139,7 @@ export async function currentResume(db: D1Database, memberId: string): Promise<R
 export async function saveResume(
   db: D1Database,
   memberId: string,
-  r: { text: string; source: Resume["source"]; fileName: string | null },
+  r: { text: string; source: Exclude<Resume["source"], "built">; fileName: string | null },
 ): Promise<void> {
   await db.batch([
     db.prepare("UPDATE resumes SET is_current = 0 WHERE member_id = ?1").bind(memberId),

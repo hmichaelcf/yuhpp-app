@@ -235,6 +235,68 @@ export function turnCost(
   return perToken / 1_000_000 + usage.searches * prices.search;
 }
 
+/**
+ * Reads saved resume text into sections (roles, bullets, skills, tools,
+ * education) with a small model, as JSON. Nothing is rewritten: the model
+ * copies what the resume says and leaves out what it does not say. Returns
+ * null data when the reply is not usable JSON.
+ */
+export async function readResumeSections(
+  text: string,
+  model: string,
+): Promise<{ data: Record<string, unknown> | null; inputTokens: number; outputTokens: number }> {
+  const res = await fetch(`${API_BASE}/v1/messages`, {
+    method: "POST",
+    headers: {
+      "x-api-key": requireSecret("ANTHROPIC_API_KEY"),
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 8000,
+      system:
+        "You read resumes into structured data. Reply with one JSON object and nothing else: no prose, no code fence. " +
+        "Keys: name (string or null); email, phone, location (strings or null; location as written, such as a city and state); " +
+        "roles: an array, most recent first, of objects with company, title (strings or null), start and end " +
+        '(each "YYYY-MM", or null when the resume does not give both a month and a year), current (true only when the role is ' +
+        'marked present or current), and bullets (an array of strings); skills (the resume\'s own skills list, if it has one, ' +
+        "as an array of strings; never derived from bullets); tools (named software and platforms the resume mentions, as an " +
+        "array of strings); interests (array of strings); education: an object with school, degree, and location (strings or " +
+        "null), or null. Copy every value exactly as written: do not rewrite, shorten, improve, translate, or merge bullets, " +
+        "and never add anything the resume does not say. Use null or an empty array when something is missing.",
+      messages: [{ role: "user", content: `<resume>\n${text}\n</resume>` }],
+    }),
+  }).catch(() => null);
+
+  if (!res) throw new ClaudeError("upstream_error", "Claude could not be reached");
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    console.error(`Claude API returned HTTP ${res.status} reading resume sections: ${detail.slice(0, 300)}`);
+    throw new ClaudeError(codeFor(res.status), `Claude returned ${res.status}`);
+  }
+  const body = (await res.json()) as {
+    content?: { type: string; text?: string }[];
+    usage?: { input_tokens?: number; output_tokens?: number };
+  };
+  const reply = (body.content ?? [])
+    .filter((b) => b.type === "text")
+    .map((b) => b.text ?? "")
+    .join("");
+  const start = reply.indexOf("{");
+  const end = reply.lastIndexOf("}");
+  let data: Record<string, unknown> | null = null;
+  if (start >= 0 && end > start) {
+    try {
+      const parsed = JSON.parse(reply.slice(start, end + 1)) as unknown;
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) data = parsed as Record<string, unknown>;
+    } catch {
+      data = null;
+    }
+  }
+  return { data, inputTokens: body.usage?.input_tokens ?? 0, outputTokens: body.usage?.output_tokens ?? 0 };
+}
+
 const NOT_A_RESUME = "NOT_A_RESUME";
 
 function base64(bytes: Uint8Array): string {

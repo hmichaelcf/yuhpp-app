@@ -24,3 +24,6 @@ npm-debug.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local secrets for wrangler dev
+.dev.vars
