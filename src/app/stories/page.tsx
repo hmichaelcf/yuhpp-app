@@ -7,6 +7,8 @@ import { bindings } from "@/lib/cloudflare";
 import { activityByPrompt, promptCatalog } from "@/lib/runs";
 import { currentMember } from "@/lib/session";
 import { loadSettings } from "@/lib/settings";
+import { STORY_ACTIONS, STORY_BUILDERS, STORY_USERS } from "@/lib/story-prompts";
+import { nameKey } from "@/lib/route-map";
 import { isDeveloped, listExperiences, listStories, storyThemes } from "@/lib/workspace";
 
 export const dynamic = "force-dynamic";
@@ -30,6 +32,12 @@ export default async function StoriesPage() {
   const developed = stories.filter(isDeveloped).length;
   const themes = storyThemes(stories);
   const pct = Math.min(developed / min, 1) * 100;
+  const prompts = catalogMap(catalog);
+  // One-click actions on an open story, for the prompts that are in the library.
+  const actions = STORY_ACTIONS.flatMap((a) => {
+    const p = prompts.get(nameKey(a.prompt));
+    return p ? [{ promptKey: p.key, label: a.label, title: a.title }] : [];
+  });
   // Companies to suggest in the story form: bullet bank roles first (most
   // recent first), then any company already used on a story.
   const companies = [
@@ -79,6 +87,7 @@ export default async function StoriesPage() {
       <section className="home-block">
         <StoryBank
           companies={companies}
+          actions={actions}
           stories={stories.map(({ id, title, company, themes, situation, task, action, result }) => ({
             id,
             title,
@@ -93,12 +102,18 @@ export default async function StoriesPage() {
       </section>
 
       <section className="home-block">
-        <p className="section-label">Prompts that find and shape stories</p>
-        <PromptCards
-          names={["STAR Story Scout", "Experience Story Builder", "STAR Story Shaper", "STAR to Bullet Converter"]}
-          catalog={catalogMap(catalog)}
-          activity={activity}
-        />
+        <p className="section-label">Build your bank</p>
+        <p className="aside">Find the stories in your background, develop new ones, and shape them into spoken answers.</p>
+        <PromptCards names={STORY_BUILDERS} catalog={prompts} activity={activity} bankTag={false} />
+      </section>
+
+      <section className="home-block">
+        <p className="section-label">Put your bank to work</p>
+        <p className="aside">
+          Each of these reads your story bank on its own, as it stands when you send a message, so a
+          story you add or edit here is picked up right away, even in a run that is already open.
+        </p>
+        <PromptCards names={STORY_USERS} catalog={prompts} activity={activity} bankTag={false} />
       </section>
     </AppShell>
   );

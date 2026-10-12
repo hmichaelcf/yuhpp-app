@@ -78,6 +78,21 @@ https://claude.ai/code/artifact/ec5dc14b-50cc-4241-945a-872c330beb3e
   (`src/lib/story-themes.ts`, shared by server and browser). The form writes
   Situation, Task, Action, and Result as one section, and offers the member's
   own themes plus the five example themes from STAR Story Scout as one-tap picks.
+- **Prompts that ask for stories read the story bank** (2026-10-11): the
+  prompts listed in `src/lib/story-prompts.ts` (by sheet name, like the route
+  map) get the member's bank in the system frame, built fresh on every turn by
+  `src/lib/story-frame.ts`, so a story added or edited in the bank reaches an
+  open run on its next message. A prompt is on the list when its own
+  instructions ask for stories, STAR accomplishments, or experience examples;
+  Self-Review Analyzer is left off on purpose (it scores only what was said).
+  Each run stores what it last read (`runs.story_bank_seen`, migration 0009),
+  and the next turn tells the model which stories were added, edited, or
+  removed since. The bank's size per run is capped by `story_bank_max_chars`
+  (complete stories first; any left out are named). The run page shows what
+  the run reads, refreshes the bank when the member returns to the tab
+  (`GET /app/api/stories`), and has an Add stories picker that inserts story
+  labels. An open story in the bank can start STAR Story Shaper or STAR to
+  Bullet Converter with one click (`/run/[id]?story=ID` prefills the message).
 - **The route map is code** (`src/lib/route-map.ts`): rail stops, phase copy
   from the guide, and which prompts sit in each phase, listed by sheet name.
   A renamed prompt drops off its phase page until the name is updated there.

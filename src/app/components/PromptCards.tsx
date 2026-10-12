@@ -3,6 +3,7 @@ import StartRunButton from "./StartRunButton";
 import { shortDate } from "@/lib/dates";
 import { nameKey } from "@/lib/route-map";
 import type { PromptActivity } from "@/lib/runs";
+import { readsStoryBank } from "@/lib/story-prompts";
 
 // A numbered stack of prompt cards, styled like the guide's, with a Start
 // button on each and a link back to the member's latest run of it.
@@ -18,11 +19,14 @@ export default function PromptCards({
   catalog,
   activity,
   loop = false,
+  bankTag = true,
 }: {
   names: string[];
   catalog: Map<string, CatalogEntry>;
   activity: Map<string, PromptActivity>;
   loop?: boolean;
+  /** Mark prompts that read the story bank (off where the page already says so). */
+  bankTag?: boolean;
 }) {
   const items = names
     .map((n) => catalog.get(nameKey(n)))
@@ -41,6 +45,7 @@ export default function PromptCards({
               <span className="card-body">
                 <span className="card-name">{p.name}</span>
                 <span className="card-what">{p.description}</span>
+                {bankTag && readsStoryBank(p.name) ? <span className="bank-tag">Reads your story bank</span> : null}
                 {act ? (
                   <span className="card-last">
                     {act.count === 1 ? "Run once" : `Run ${act.count} times`}, last {shortDate(act.lastAt)}.{" "}

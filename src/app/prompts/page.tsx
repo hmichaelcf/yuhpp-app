@@ -5,6 +5,7 @@ import { isAdmin } from "@/lib/admin";
 import { bindings } from "@/lib/cloudflare";
 import { promptCatalog } from "@/lib/runs";
 import { currentMember } from "@/lib/session";
+import { readsStoryBank } from "@/lib/story-prompts";
 
 export const dynamic = "force-dynamic";
 
@@ -49,6 +50,7 @@ export default async function PromptsPage() {
                     <li key={p.key} className="prompt-item">
                       <div className="prompt-text">
                         <span className="prompt-name">{p.name}</span>
+                        {readsStoryBank(p.name) ? <span className="bank-tag">Reads your story bank</span> : null}
                         <span className="prompt-desc">{p.description}</span>
                       </div>
                       <StartRunButton promptKey={p.key} />
