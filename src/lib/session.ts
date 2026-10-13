@@ -1,5 +1,6 @@
 import "server-only";
 import { cookies } from "next/headers";
+import { cache } from "react";
 import { bindings } from "./cloudflare";
 import { getMember, type Member } from "./members";
 import { BASE_PATH } from "./paths";
@@ -49,8 +50,11 @@ export async function destroySession(sessionId: string): Promise<void> {
   await SESSIONS.delete(key(sessionId));
 }
 
-/** The signed-in member for this request, or null. */
-export async function currentMember(): Promise<Member | null> {
+/**
+ * The signed-in member for this request, or null. Cached per request, so the
+ * page and the layout around it (the menu's Home card) share one lookup.
+ */
+export const currentMember = cache(async (): Promise<Member | null> => {
   const store = await cookies();
   const sessionId = store.get(SESSION_COOKIE)?.value;
   if (!sessionId || !/^[0-9a-f]{64}$/.test(sessionId)) return null;
@@ -64,4 +68,4 @@ export async function currentMember(): Promise<Member | null> {
     return null;
   }
   return getMember(DB, record.memberId);
-}
+});

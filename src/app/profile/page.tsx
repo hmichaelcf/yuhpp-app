@@ -20,7 +20,7 @@ export default async function ProfilePage() {
   const resume = await currentResume(DB, member.id);
 
   return (
-    <AppShell admin={isAdmin(member)} active="positioning">
+    <AppShell admin={isAdmin(member)} active="home">
       <div className="shell-narrow">
         <p className="eyebrow">Profile</p>
         <h1 className="title">

@@ -41,6 +41,10 @@ https://claude.ai/code/artifact/ec5dc14b-50cc-4241-945a-872c330beb3e
   at /app/resume/print). Phase 03 runs read the published resume plus a search
   brief, open with a first message drafted from it, and save titles and
   companies back. See "Resume record" below.
+- **Home by phase (done in code, 2026-10-13, branch `home-profile`):** the
+  menu opens with a Home card (initials, name, current phase) instead of a
+  Start stop. Home shows one next step for the member's phase, their four
+  materials, this week's numbers, and recent runs. See "Home by phase" below.
 - Later phases: onboarding, application loop, interview loop, weekly review and
   practice, beta launch. See the build spec.
 
@@ -158,6 +162,20 @@ https://claude.ai/code/artifact/ec5dc14b-50cc-4241-945a-872c330beb3e
   `members.last_name` (migration 0011) when the session starts. Sign-in sends
   no names, so it never clears them. Members edit both on /app/profile. Names
   live only in Yuhpp's database, not in Memberstack.
+- **Home by phase** (2026-10-13): the member picks where they are and the app
+  nudges. A member with no phase is sent to /app/welcome ("Where are you in
+  your search?"), which offers the guide's "where are you" lines plus a direct
+  phase pick and saves `members.current_phase` (migration 0012). Home's next
+  step comes from `nextStep()` in `src/lib/home-plan.ts`: each phase lists its
+  checkpoint's checks, and the first unmet one names the prompt or page to
+  open. Checks the app cannot see (a live LinkedIn profile, hard constraints,
+  the round stack) show "Your call" and never block. When every data check is
+  met, a bar offers to move on; "Not yet" stores the phase in
+  `nudge_snoozed`, cleared on the next phase change. The phase ids, labels,
+  and onboarding lines are in `src/lib/phases.ts` (shared). The menu's Home
+  card marks earlier phases done and the current one "You are here".
+  **No per-job or per-round tracking** (Michael's call, to stay distinct from
+  application trackers like Teal); Phase 05's next step stays general.
 - **The route map is code** (`src/lib/route-map.ts`): rail stops, phase copy
   from the guide, and which prompts sit in each phase, listed by sheet name.
   A renamed prompt drops off its phase page until the name is updated there.
@@ -280,7 +298,9 @@ Local development uses `.env.local` (copy `.env.example`; never commit it).
 
 ```
 src/app/                pages and API routes (App Router)
-  page.tsx              /app: signed-in home (redirects to /login if signed out)
+  page.tsx              /app: Home, next step for the member's phase (redirects
+                        to /login if signed out, /welcome if no phase yet)
+  welcome/page.tsx      /app/welcome: "Where are you in your search?"
   phase/[slug]/         /app/phase/direction ... /app/phase/rejection
   bullets/ stories/     the bullet bank and the story bank
   outreach/ weekly/     saved searches; weekly numbers and progress metrics
@@ -299,6 +319,7 @@ src/app/                pages and API routes (App Router)
   api/runs/             start a run; [id]/messages streams a turn; [id]/close
   api/profile/resume/   POST saves the resume as text; DELETE removes it
   api/profile/name/     POST sets the member's first and last name
+  api/profile/phase/    POST sets the member's phase, or snoozes the nudge
   api/bullets/ api/stories/ api/searches/   add, edit, remove (member-scoped)
   api/experiences/[id]  PATCH fixes a bullet bank role's title, company, dates
   api/weekly/           PUT saves one week's numbers; DELETE removes a week
@@ -308,7 +329,8 @@ src/app/                pages and API routes (App Router)
   components/           AppShell, Rail, Masthead, PromptCards, BulletBank,
                         StoryBank, SavedSearches, WeeklyForm, NameForm,
                         CopyButton, AuthForm, SignOutButton, PromptUpload,
-                        StartRunButton, ChatView, ResumeForm
+                        StartRunButton, ChatView, ResumeForm, PhasePicker,
+                        NudgeBar
   globals.css           design tokens shared with the public guide
 src/lib/
   config.ts             the only place secrets are read (server only)
@@ -331,6 +353,8 @@ src/lib/
   paths.ts              appPath(): mount-path prefix for <a> and fetch()
   stream-protocol.ts    the streamed reply format, shared by server and browser
   route-map.ts          rail stops, phase pages, prompts per phase
+  phases.ts             phase ids, labels, onboarding lines (shared)
+  home-plan.ts          Home's next step and checkpoint checks (server only)
   workspace.ts          bullets, roles, stories, saved searches (server only)
   resume-shape.ts       the resume record's shape, text, and status (shared)
   resume-record.ts      load, save, publish the resume record (server only)

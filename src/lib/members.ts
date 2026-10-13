@@ -8,6 +8,8 @@ export type Member = {
   email: string | null;
   first_name: string | null;
   last_name: string | null;
+  current_phase: string | null;
+  nudge_snoozed: string | null;
   cohort_id: string | null;
   is_admin: number;
   consent_terms_at: string | null;
@@ -71,7 +73,7 @@ export async function upsertMember(
 export async function getMember(db: D1Database, id: string): Promise<Member | null> {
   return db
     .prepare(
-      `SELECT id, email, first_name, last_name, cohort_id, is_admin, consent_terms_at, consent_research_at, created_at
+      `SELECT id, email, first_name, last_name, current_phase, nudge_snoozed, cohort_id, is_admin, consent_terms_at, consent_research_at, created_at
        FROM members WHERE id = ?1`,
     )
     .bind(id)
@@ -88,4 +90,19 @@ export async function setName(
     .prepare("UPDATE members SET first_name = ?2, last_name = ?3 WHERE id = ?1")
     .bind(id, name.firstName, name.lastName)
     .run();
+}
+
+/** Sets where the member is on the route. A new phase clears any snoozed suggestion. */
+export async function setPhase(db: D1Database, id: string, phase: string): Promise<void> {
+  await db
+    .prepare(
+      "UPDATE members SET current_phase = ?2, phase_set_at = datetime('now'), nudge_snoozed = NULL WHERE id = ?1",
+    )
+    .bind(id, phase)
+    .run();
+}
+
+/** "Not yet": hides the move-on suggestion until the phase changes. */
+export async function snoozeNudge(db: D1Database, id: string): Promise<void> {
+  await db.prepare("UPDATE members SET nudge_snoozed = current_phase WHERE id = ?1").bind(id).run();
 }
