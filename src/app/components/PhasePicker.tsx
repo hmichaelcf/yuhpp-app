@@ -33,7 +33,7 @@ export default function PhasePicker({ current }: { current: PhaseId | null }) {
   return (
     <div className="where">
       <fieldset className="where-lines">
-        <legend className="sr-only">Pick the line that sounds most like your week</legend>
+        <legend className="sr-only">Pick the line that best describes your week</legend>
         {WHERE_LINES.map((w, i) => {
           const on = line === i && !direct;
           return (

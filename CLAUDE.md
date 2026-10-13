@@ -309,7 +309,7 @@ src/app/                pages and API routes (App Router)
   status/page.tsx       /app/status: configuration and storage checks
   admin/page.tsx        /app/admin: usage, prompt sync, settings (admins only)
   prompts/page.tsx      /app/prompts: pick a prompt and start a run
-  profile/page.tsx      /app/profile: save, check, replace, remove the resume
+  profile/page.tsx      /app/profile: name, where you are, and the saved resume
   resume/page.tsx       /app/resume: the resume in the template; fill in, publish
   resume/print/         /app/resume/print: the two pages alone, for Save as PDF
   run/[id]/page.tsx     /app/run/[id]: the chat for one run
