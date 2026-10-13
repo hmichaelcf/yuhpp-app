@@ -11,7 +11,7 @@
 // the g3_* settings for the same reason.
 
 export type StopId =
-  | "start"
+  | "home"
   | "direction"
   | "positioning"
   | "search"
@@ -29,7 +29,6 @@ export type RailItem =
   | { kind: "group"; label: string };
 
 export const RAIL: RailItem[] = [
-  { kind: "stop", id: "start", code: "Start", name: "Where you begin", href: "/" },
   { kind: "stop", id: "direction", code: "01", name: "Direction", href: "/phase/direction" },
   { kind: "gate" },
   { kind: "stop", id: "positioning", code: "02", name: "Positioning", href: "/phase/positioning" },
@@ -374,17 +373,6 @@ export const PHASES: Phase[] = [
       },
     ],
   },
-];
-
-/** "If you are already mid-search, start here" from the guide's opening panel. */
-export const ENTRIES: { q: string; href: string; a: string }[] = [
-  { q: "I have no idea what I actually want next", href: "/phase/direction", a: "Phase 01" },
-  { q: "My resume and LinkedIn are not ready", href: "/phase/positioning", a: "Phase 02" },
-  { q: "I am applying and hearing nothing back", href: "/phase/application", a: "Phase 04" },
-  { q: "I get screens, and they end there", href: "/phase/interview", a: "Phase 05" },
-  { q: "I get onsites, and I lose them", href: "/phase/practice", a: "Practice loop" },
-  { q: "I have a take-home or a case study due", href: "/phase/interview", a: "Phase 05" },
-  { q: "I have an offer in hand", href: "/phase/offer", a: "Phase 06" },
 ];
 
 export function phaseBySlug(slug: string): Phase | undefined {
