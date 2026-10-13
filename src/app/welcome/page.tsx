@@ -27,8 +27,8 @@ export default async function WelcomePage() {
           Where are you in <em>your search?</em>
         </h1>
         <p className="lede">
-          Pick the line that sounds most like your week. Home will put the right next step in front of you. You can
-          change this any time from Home.
+          Pick the line that best describes your week, and we will present the right next step for you. You can
+          change this at any time in your profile.
         </p>
         <PhasePicker current={current} />
         {current ? (

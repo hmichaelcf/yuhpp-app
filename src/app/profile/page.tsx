@@ -4,6 +4,7 @@ import AppShell from "../components/AppShell";
 import NameForm from "../components/NameForm";
 import ResumeForm from "../components/ResumeForm";
 import { isAdmin } from "@/lib/admin";
+import { isPhase, phaseLabel } from "@/lib/phases";
 import { bindings } from "@/lib/cloudflare";
 import { currentResume, savedOnDate } from "@/lib/resumes";
 import { currentMember } from "@/lib/session";
@@ -18,6 +19,7 @@ export default async function ProfilePage() {
 
   const { DB } = await bindings();
   const resume = await currentResume(DB, member.id);
+  const phase = isPhase(member.current_phase) ? member.current_phase : null;
 
   return (
     <AppShell admin={isAdmin(member)} active="home">
@@ -34,6 +36,20 @@ export default async function ProfilePage() {
         <section className="admin-block" id="name">
           <p className="section-label">Your name</p>
           <NameForm first={member.first_name ?? ""} last={member.last_name ?? ""} />
+        </section>
+
+        <section className="admin-block" id="where">
+          <p className="section-label">Where you are</p>
+          <p className="aside">
+            {phase ? (
+              <>
+                You are in <strong>{phaseLabel(phase)}</strong>. Home shows the next step for this phase.
+              </>
+            ) : (
+              <>You have not told us where you are yet.</>
+            )}{" "}
+            <Link href="/welcome">Change where I am</Link>
+          </p>
         </section>
 
         <p className="aside">
