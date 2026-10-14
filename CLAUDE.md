@@ -173,7 +173,9 @@ https://claude.ai/code/artifact/ec5dc14b-50cc-4241-945a-872c330beb3e
   met, a bar offers to move on; "Not yet" stores the phase in
   `nudge_snoozed`, cleared on the next phase change. The phase ids, labels,
   and onboarding lines are in `src/lib/phases.ts` (shared). The menu's Home
-  card marks earlier phases done and the current one "You are here".
+  card marks earlier phases done and the member's own phase "Your phase",
+  with the only filled dot. The tag moves only when the member changes phase;
+  the page being viewed gets a hollow ring and a thin line instead.
   **No per-job or per-round tracking** (Michael's call, to stay distinct from
   application trackers like Teal); Phase 05's next step stays general.
 - **Signal palette and Route wordmark** (2026-10-13): the teal palette was
