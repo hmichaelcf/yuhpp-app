@@ -161,6 +161,14 @@ https://claude.ai/code/artifact/ec5dc14b-50cc-4241-945a-872c330beb3e
   Optimizer works from the finished resume; and every save in a run shows a
   message with a link to what changed ("Leadership is in your resume. See your
   resume").
+- **Overlap with Teal is accepted** (2026-10-14): the resume page and PDF,
+  the bullet bank, Match Meter scoring, LinkedIn steps, and saved companies
+  overlap with Teal's resume builder and tools. Michael decided to keep them as
+  they are: they add value, and Yuhpp stays differentiated by the method (the
+  phase sequence, checkpoints, the practice loop, the weekly review, the story
+  bank feeding interview prep). Do not reopen this. The one limit that stands
+  is the earlier decision against per-job and per-round tracking (see Home by
+  phase), so saved companies stays a plain list.
 - **Positioning order** (2026-10-12): the resume prompts run Experience Story
   Builder, then Resume Bullet Refinement, then Resume Value Builder, which
   summarizes the finished bullets, as methodology map v1.3 orders them.
