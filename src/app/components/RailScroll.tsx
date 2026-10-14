@@ -7,6 +7,8 @@ import { useEffect } from "react";
 
 export default function RailScroll() {
   useEffect(() => {
+    // Desktop shows the rail as a column; only the phone row scrolls sideways.
+    if (!window.matchMedia("(max-width: 900px)").matches) return;
     const rail = document.querySelector<HTMLElement>(".rail");
     const active = rail?.querySelector<HTMLElement>(".stop.is-active");
     if (!rail || !active || rail.scrollWidth <= rail.clientWidth) return;

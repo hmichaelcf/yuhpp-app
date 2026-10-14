@@ -849,6 +849,7 @@ a.link-button {
   top: 58px;
   padding: 36px 0 24px;
   max-height: calc(100vh - 58px);
+  overflow-x: hidden;
   overflow-y: auto;
 }
 .rail-title {
