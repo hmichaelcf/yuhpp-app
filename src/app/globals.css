@@ -914,21 +914,31 @@ a.link-button {
 }
 .stop.is-active {
   color: var(--ink);
-  font-weight: 600;
 }
+/* The page being viewed: a hollow ring and a thin line beside the name.
+   Only the member's phase gets a filled dot and the tag (see "Your phase"). */
 .stop.is-active .dot {
   border-color: var(--main);
+  background: var(--surface);
+}
+.stop.is-active::after {
+  content: "";
+  position: absolute;
+  left: -8px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  border-radius: 2px;
   background: var(--main);
-  transform: scale(1.18);
+}
+.stop.is-loop.is-active::after {
+  background: var(--loop);
 }
 .stop.is-loop {
   margin-left: 20px;
 }
 .stop.is-loop .dot {
   border-color: var(--loop);
-}
-.stop.is-loop.is-active .dot {
-  background: var(--loop);
 }
 /* A short dashed spur from the main line out to the loop's dot. */
 .stop.is-loop::before {
@@ -2491,16 +2501,14 @@ a.link-button {
   }
   .stop.is-active {
     border-color: var(--main);
-    background: var(--main);
-    color: var(--on-main);
+    box-shadow: inset 0 0 0 1px var(--main);
   }
-  .stop.is-active .code {
-    color: inherit;
-    opacity: 0.75;
+  .stop.is-active::after {
+    display: none;
   }
   .stop.is-loop.is-active {
     border-color: var(--loop);
-    background: var(--loop);
+    box-shadow: inset 0 0 0 1px var(--loop);
   }
   .rail-group {
     margin: 0;
@@ -3743,7 +3751,7 @@ a.primary-button {
 }
 
 /* =====================================================================
-   Home redesign (2026-10-13): the menu's Home card, "You are here" on the
+   Home redesign (2026-10-13): the menu's Home card, "Your phase" on the
    route, and Home's five zones. Approved in the "Yuhpp Home redesign" canvas.
    ===================================================================== */
 
@@ -3804,7 +3812,7 @@ a.primary-button {
   color: var(--ink-2);
 }
 
-/* ---------- menu: phases done and "You are here" ---------- */
+/* ---------- menu: phases done and "Your phase" ---------- */
 .stop.is-done .dot {
   background: var(--main);
   border-color: var(--main);
@@ -4329,6 +4337,17 @@ a.next-alt {
   }
   .stop.is-here {
     display: block;
+    border-color: var(--main);
+    background: var(--main);
+    color: var(--on-main);
+  }
+  .stop.is-loop.is-here {
+    border-color: var(--loop);
+    background: var(--loop);
+  }
+  .stop.is-here .code {
+    color: inherit;
+    opacity: 0.75;
   }
   .stop.is-here .here-tag {
     display: none;

@@ -5,9 +5,11 @@ import type { PhaseId } from "@/lib/phases";
 
 // The menu: the member's Home card on top, then the route from the public
 // guide (every phase in order, the checkpoints between them, and the stops
-// that run alongside). The member's own phase carries a "You are here" tag;
-// phases before it are filled in. On a phone it becomes a row of chips that
-// scrolls sideways.
+// that run alongside). The member's own phase carries the "Your phase" tag and
+// the only filled dot; it moves only when the member changes phase. The page
+// being viewed gets a hollow ring and a thin line instead. Phases before the
+// member's are filled in. On a phone it becomes a row of chips that scrolls
+// sideways: your phase is the filled chip, the page you are on is outlined.
 
 export type RailHome = {
   initials: string;
@@ -61,7 +63,7 @@ export default function Rail({ active, home }: { active?: StopId; home: RailHome
               <span className="dot" aria-hidden="true" />
               <span className="code">{item.code}</span>
               {item.name}
-              {here ? <span className="here-tag">You are here</span> : null}
+              {here ? <span className="here-tag">Your phase</span> : null}
             </Link>
           );
         })}
