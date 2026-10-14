@@ -154,6 +154,13 @@ https://claude.ai/code/artifact/ec5dc14b-50cc-4241-945a-872c330beb3e
   `target_companies`, which Networking Target Finder reads.
   `src/lib/run-reads.ts` works out what each step reads, for both the run page
   and the messages route.
+- **Finding the resume** (2026-10-14): Your resume (/app/resume) is listed
+  under Positioning on the menu (a `sub` item in `RAIL`, StopId `resume`); the
+  resume steps end with a fourth card, "Get your resume" (`ResumeStepCard`,
+  block `resume-step`), placed before LinkedIn because LinkedIn Experience
+  Optimizer works from the finished resume; and every save in a run shows a
+  message with a link to what changed ("Leadership is in your resume. See your
+  resume").
 - **Positioning order** (2026-10-12): the resume prompts run Experience Story
   Builder, then Resume Bullet Refinement, then Resume Value Builder, which
   summarizes the finished bullets, as methodology map v1.3 orders them.

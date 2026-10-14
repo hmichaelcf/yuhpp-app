@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import CopyButton from "./CopyButton";
 import { callApi } from "@/lib/client-api";
 import { BLOCK_TARGETS, type BlockKind } from "@/lib/resume-prompts";
@@ -70,6 +70,23 @@ function Head({ kind, count, children }: { kind: BlockKind; count: number; child
   );
 }
 
+/**
+ * The message right after a save: what changed and a link to see it. Shown
+ * only for saves made on this page, not for items saved earlier.
+ */
+function SavedNote({ text, href, link }: { text: string; href: string; link: string }) {
+  return (
+    <p className="yb-saved" role="status">
+      <Check />
+      <span>
+        {text} <Link href={href}>{link} &rarr;</Link>
+      </span>
+    </p>
+  );
+}
+
+const RESUME_NOTE = { href: "/resume", link: "See your resume" };
+
 // ---------- Skills & knowledge, Leadership ----------
 
 function ListBlock({
@@ -86,6 +103,7 @@ function ListBlock({
   const current = ctx.draft?.[kind] ?? [];
   const already = items.length > 0 && items.length === current.length && items.every((x, i) => same(x, current[i]));
   const [state, setState] = useState<"" | "busy" | "saved">(already ? "saved" : "");
+  const [justSaved, setJustSaved] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
 
@@ -95,6 +113,7 @@ function ListBlock({
     const r = await callApi("PUT", "/api/resume", { [kind]: items });
     if (r.ok) {
       setState("saved");
+      setJustSaved(true);
       // The page re-reads the draft, so later blocks compare against it.
       router.refresh();
     }
@@ -125,9 +144,11 @@ function ListBlock({
         ))}
       </ul>
       {error ? <p className="inline-error yb-error">{error}</p> : null}
-      {state === "saved" ? (
+      {justSaved ? (
+        <SavedNote text={`${BLOCK_TARGETS[kind]} is in your resume.`} {...RESUME_NOTE} />
+      ) : state === "saved" ? (
         <p className="yb-foot">
-          <Link href="/resume">Review your resume</Link> and publish it when you are ready.
+          Already in your resume. <Link href="/resume">See your resume</Link>
         </p>
       ) : null}
     </section>
@@ -177,7 +198,17 @@ function parseBullets(text: string, ctx: BlockContext): BulletRow[] {
   });
 }
 
-function BulletLine({ row, ctx, final }: { row: BulletRow; ctx: BlockContext; final: boolean }) {
+function BulletLine({
+  row,
+  ctx,
+  final,
+  onSaved,
+}: {
+  row: BulletRow;
+  ctx: BlockContext;
+  final: boolean;
+  onSaved: (kind: "replaced" | "added") => void;
+}) {
   const roles = ctx.draft?.roles ?? [];
   // Already saved: a replacement whose new text is in place, or an added bullet already in the draft.
   const already =
@@ -202,6 +233,7 @@ function BulletLine({ row, ctx, final }: { row: BulletRow; ctx: BlockContext; fi
     const r = await callApi("POST", "/api/resume/bullets", body);
     if (r.ok) {
       setState("done");
+      onSaved(row.replaceId !== null ? "replaced" : "added");
       router.refresh();
     }
     else {
@@ -261,6 +293,17 @@ function BulletLine({ row, ctx, final }: { row: BulletRow; ctx: BlockContext; fi
 
 function BulletsBlock({ text, ctx, final }: { text: string; ctx: BlockContext; final: boolean }) {
   const rows = useMemo(() => parseBullets(text, ctx), [text, ctx]);
+  const [saved, setSaved] = useState({ replaced: 0, added: 0 });
+  const onSaved = useCallback(
+    (kind: "replaced" | "added") => setSaved((s) => ({ ...s, [kind]: s[kind] + 1 })),
+    [],
+  );
+  const savedText = [
+    saved.replaced ? `${saved.replaced} ${saved.replaced === 1 ? "bullet" : "bullets"} replaced` : "",
+    saved.added ? `${saved.added} added` : "",
+  ]
+    .filter(Boolean)
+    .join(", ");
   return (
     <section className="yb">
       <Head kind="bullets" count={rows.length}>
@@ -268,26 +311,46 @@ function BulletsBlock({ text, ctx, final }: { text: string; ctx: BlockContext; f
       </Head>
       <ul className="yb-rows">
         {rows.map((r) => (
-          <BulletLine key={`${r.key}-${r.text}`} row={r} ctx={ctx} final={final} />
+          <BulletLine key={`${r.key}-${r.text}`} row={r} ctx={ctx} final={final} onSaved={onSaved} />
         ))}
       </ul>
-      <p className="yb-foot">
-        Bullets save to your <Link href="/bullets">bullet bank</Link>, which is where your resume&apos;s experience comes from.
-      </p>
+      {savedText ? (
+        <SavedNote text={`${savedText.charAt(0).toUpperCase()}${savedText.slice(1)} in your resume.`} {...RESUME_NOTE} />
+      ) : (
+        <p className="yb-foot">
+          Bullets save to your <Link href="/bullets">bullet bank</Link>, which is where your resume&apos;s experience
+          comes from.
+        </p>
+      )}
     </section>
   );
 }
 
 // ---------- Titles ----------
 
-function TitleChip({ title, kind, inBrief, final }: { title: string; kind: "strong" | "stretch"; inBrief: boolean; final: boolean }) {
+function TitleChip({
+  title,
+  kind,
+  inBrief,
+  final,
+  onSaved,
+}: {
+  title: string;
+  kind: "strong" | "stretch";
+  inBrief: boolean;
+  final: boolean;
+  onSaved: () => void;
+}) {
   const [state, setState] = useState<"" | "busy" | "done">(inBrief ? "done" : "");
   const [error, setError] = useState("");
   async function add() {
     setState("busy");
     setError("");
     const r = await callApi("POST", "/api/search-brief", { title, kind });
-    if (r.ok) setState("done");
+    if (r.ok) {
+      setState("done");
+      onSaved();
+    }
     else {
       setState("");
       setError(r.message);
@@ -323,6 +386,8 @@ function TitlesBlock({ text, ctx, final }: { text: string; ctx: BlockContext; fi
     return m ? { kind: m[1].toLowerCase() as "strong" | "stretch", title: m[2].trim() } : { kind: "strong" as const, title: l };
   });
   const existing = ctx.briefTitles ?? [];
+  const [added, setAdded] = useState(0);
+  const onSaved = useCallback(() => setAdded((n) => n + 1), []);
   return (
     <section className="yb">
       <Head kind="titles" count={titles.length} />
@@ -334,12 +399,22 @@ function TitlesBlock({ text, ctx, final }: { text: string; ctx: BlockContext; fi
             kind={t.kind}
             inBrief={existing.some((x) => same(x, t.title))}
             final={final}
+            onSaved={onSaved}
           />
         ))}
       </ul>
-      <p className="yb-foot">
-        Titles go into your <Link href="/phase/search#brief">search brief</Link>, which next week&apos;s searches start from.
-      </p>
+      {added ? (
+        <SavedNote
+          text={`${added} ${added === 1 ? "title" : "titles"} added to your search brief.`}
+          href="/phase/search#brief"
+          link="See your brief"
+        />
+      ) : (
+        <p className="yb-foot">
+          Titles go into your <Link href="/phase/search#brief">search brief</Link>, which next week&apos;s searches start
+          from.
+        </p>
+      )}
     </section>
   );
 }
@@ -353,6 +428,7 @@ function CompanyRow({
   saved,
   runId,
   final,
+  onSaved,
 }: {
   name: string;
   note: string | null;
@@ -360,6 +436,7 @@ function CompanyRow({
   saved: boolean;
   runId: string;
   final: boolean;
+  onSaved: () => void;
 }) {
   const [state, setState] = useState<"" | "busy" | "done">(saved ? "done" : "");
   const [error, setError] = useState("");
@@ -367,7 +444,10 @@ function CompanyRow({
     setState("busy");
     setError("");
     const r = await callApi("POST", "/api/companies", { name, note, where, runId });
-    if (r.ok) setState("done");
+    if (r.ok) {
+      setState("done");
+      onSaved();
+    }
     else {
       setState("");
       setError(r.message);
@@ -405,6 +485,8 @@ function CompaniesBlock({ text, ctx, final }: { text: string; ctx: BlockContext;
     return { name, note: note || null, where: where || null };
   });
   const saved = ctx.companies ?? [];
+  const [added, setAdded] = useState(0);
+  const onSaved = useCallback(() => setAdded((n) => n + 1), []);
   return (
     <section className="yb">
       <Head kind="companies" count={rows.length} />
@@ -418,12 +500,21 @@ function CompaniesBlock({ text, ctx, final }: { text: string; ctx: BlockContext;
               saved={saved.some((s) => same(s, r.name))}
               runId={ctx.runId}
               final={final}
+              onSaved={onSaved}
             />
           ))}
       </ul>
-      <p className="yb-foot">
-        Saved companies are where Track B starts: <Link href="/phase/search#companies">see your list</Link>.
-      </p>
+      {added ? (
+        <SavedNote
+          text={`${added} ${added === 1 ? "company" : "companies"} saved for Track B outreach.`}
+          href="/phase/search#companies"
+          link="See your list"
+        />
+      ) : (
+        <p className="yb-foot">
+          Saved companies are where Track B starts: <Link href="/phase/search#companies">see your list</Link>.
+        </p>
+      )}
     </section>
   );
 }

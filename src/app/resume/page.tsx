@@ -35,7 +35,7 @@ export default async function ResumePage() {
     .map((r) => ({ id: r.id as number, company: r.company, title: r.title, start: r.start, end: r.end, current: r.current }));
 
   return (
-    <AppShell admin={isAdmin(member)} active="positioning">
+    <AppShell admin={isAdmin(member)} active="resume">
       <p className="eyebrow">
         <Link href="/phase/positioning">Positioning</Link> / Checkpoint 02
       </p>

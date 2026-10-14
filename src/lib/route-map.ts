@@ -14,6 +14,7 @@ export type StopId =
   | "home"
   | "direction"
   | "positioning"
+  | "resume"
   | "search"
   | "application"
   | "interview"
@@ -25,6 +26,8 @@ export type StopId =
 
 export type RailItem =
   | { kind: "stop"; id: StopId; code: string; name: string; href: string; loop?: boolean }
+  /** A page that belongs to the phase above it, listed under it (Your resume under Positioning). */
+  | { kind: "sub"; id: StopId; name: string; href: string }
   | { kind: "gate" }
   | { kind: "group"; label: string };
 
@@ -32,6 +35,7 @@ export const RAIL: RailItem[] = [
   { kind: "stop", id: "direction", code: "01", name: "Direction", href: "/phase/direction" },
   { kind: "gate" },
   { kind: "stop", id: "positioning", code: "02", name: "Positioning", href: "/phase/positioning" },
+  { kind: "sub", id: "resume", name: "Your resume", href: "/resume" },
   { kind: "gate" },
   { kind: "stop", id: "search", code: "03", name: "Search and outreach", href: "/phase/search" },
   { kind: "gate" },
@@ -62,7 +66,9 @@ export type Block =
   /** The member's resume as Phase 02 builds it (ResumePanel). */
   | { t: "resume" }
   /** The search brief and saved companies Phase 03 runs read (SearchBriefPanel). */
-  | { t: "brief" };
+  | { t: "brief" }
+  /** "Get your resume": the last resume step, a card that opens /resume (ResumeStepCard). */
+  | { t: "resume-step"; num: number };
 
 export type Phase = {
   slug: string;
@@ -117,9 +123,10 @@ export const PHASES: Phase[] = [
       { t: "resume" },
       { t: "label", v: "Resume: run in this order" },
       { t: "prompts", names: ["Experience Story Builder", "Resume Bullet Refinement", "Resume Value Builder"] },
+      { t: "resume-step", num: 4 },
       {
         t: "aside",
-        v: "Value Builder runs last because it summarizes your finished bullets. Each step offers to save its output into your resume; nothing changes until you accept it.",
+        v: "Value Builder runs after the bullets because it summarizes them. Each step offers to save its output into your resume; nothing changes until you accept it. Publish before LinkedIn, because LinkedIn Experience Optimizer works from your finished resume.",
       },
       { t: "label", v: "LinkedIn" },
       { t: "prompts", names: ["LinkedIn Experience Optimizer", "LinkedIn About Architect"] },

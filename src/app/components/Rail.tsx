@@ -45,6 +45,20 @@ export default function Rail({ active, home }: { active?: StopId; home: RailHome
               </div>
             );
           }
+          if (item.kind === "sub") {
+            const on = item.id === active;
+            return (
+              <Link
+                key={item.id}
+                href={item.href}
+                className={[ "stop", "is-sub", on ? "is-active" : "", i < phaseAt ? "is-done" : ""].filter(Boolean).join(" ")}
+                aria-current={on ? "page" : undefined}
+              >
+                <span className="dot" aria-hidden="true" />
+                {item.name}
+              </Link>
+            );
+          }
           if (item.kind === "group") {
             return (
               <p key={i} className="rail-group">
