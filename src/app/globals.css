@@ -1,18 +1,33 @@
-/* Design tokens carried over from the Job Search System guide.
-   Teal = proceed, violet = the practice loop, red = only where a gate says stop. */
+/* Design tokens shared with the public site (Webflow variables) and the
+   Yuhpp design system. Signal palette, adopted 2026-10-13: rust = proceed
+   and the brand, blue = the practice loop, oxblood = only where a gate says
+   stop. ink-3 is safe for small text; ink-4 is for dots and strokes only. */
 :root {
-  --paper: #ecf0ef;
+  --paper: #f2eee8;
   --surface: #ffffff;
-  --ink: #0f1a1c;
-  --ink-2: #3e5155;
-  --ink-3: #78898c;
-  --main: #0e5a55;
-  --main-soft: #dae9e7;
-  --loop: #5b45a0;
-  --loop-soft: #e5e0f4;
-  --stop: #a32c22;
-  --stop-soft: #f4e2e0;
-  --rule: #d6dedc;
+  --surface-sunk: #faf8f5;
+  --ink: #1b1714;
+  --ink-2: #4a4038;
+  --ink-3: #6b6058;
+  --ink-4: #968a7f;
+  --main: #b8470e;
+  --on-main: #ffffff;
+  --main-soft: #f8e3d6;
+  --main-deep: #7a2c08;
+  --loop: #2f4b8f;
+  --loop-soft: #e1e7f5;
+  --loop-deep: #1d2f5c;
+  --stop: #7f1734;
+  --stop-soft: #f6e1e6;
+  --stop-deep: #5a0f24;
+  --rule: #e0d9cf;
+
+  /* The dark "next step" card on Home, the same in both color schemes. */
+  --night: #241c17;
+  --night-ink: #e9ded5;
+  --night-soft: #ead8cb;
+  --night-accent: #f2b28e;
+  --night-signal: #e8875a;
 
   --sans: "Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --serif: "Newsreader", Georgia, "Times New Roman", serif;
@@ -21,18 +36,24 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --paper: #0d1416;
-    --surface: #152024;
-    --ink: #e8eeed;
-    --ink-2: #b3c2c4;
-    --ink-3: #7d8f92;
-    --main: #4fb3aa;
-    --main-soft: #17312f;
-    --loop: #a593e0;
-    --loop-soft: #241d3a;
-    --stop: #e2766c;
-    --stop-soft: #3a1c19;
-    --rule: #26363a;
+    --paper: #15110e;
+    --surface: #1e1915;
+    --surface-sunk: #191511;
+    --ink: #f2ece6;
+    --ink-2: #cdbfb3;
+    --ink-3: #a39588;
+    --ink-4: #6f635a;
+    --main: #e5804f;
+    --on-main: #1a120d;
+    --main-soft: #3b2418;
+    --main-deep: #f6c7aa;
+    --loop: #93a9e6;
+    --loop-soft: #1f2944;
+    --loop-deep: #c9d5f5;
+    --stop: #f2b3c1;
+    --stop-soft: #3d1a24;
+    --stop-deep: #f8d3dc;
+    --rule: #362d27;
   }
 }
 
@@ -76,19 +97,45 @@ a {
   margin: 0 auto;
   padding: 16px 24px;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 12px;
 }
+/* The Route wordmark (Masthead.tsx): the rail and letters take their colors
+   from the tokens, so it works in both color schemes. */
 .wordmark {
-  font-size: 17px;
-  font-weight: 600;
-  letter-spacing: -0.015em;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   margin: 0;
 }
-.wordmark .bar {
+.wm-mark {
+  display: block;
+  height: 24px;
+  width: 79px;
+  flex: none;
+}
+.wm-track {
+  stroke: var(--main-soft);
+}
+.wm-rail {
+  stroke: var(--main);
+}
+.wm-stop {
+  fill: var(--main);
+}
+.wm-ahead {
+  fill: var(--surface);
+  stroke: var(--main);
+}
+.wm-letters {
+  fill: currentColor;
+}
+.wordmark .wm-long {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
   color: var(--ink-3);
-  font-weight: 400;
-  margin: 0 3px;
 }
 .tag {
   font-family: var(--mono);
@@ -214,7 +261,7 @@ button:disabled {
   letter-spacing: 0.13em;
   text-transform: uppercase;
   background: var(--main);
-  color: #fff;
+  color: var(--on-main);
   border: 0;
   border-radius: 2px;
   padding: 13px 20px;
@@ -455,7 +502,7 @@ a.text-button {
 a.link-button {
   display: inline-block;
   text-decoration: none;
-  color: #fff;
+  color: var(--on-main);
 }
 .page .eyebrow a {
   color: inherit;
@@ -1158,11 +1205,10 @@ a.link-button {
   color: var(--ink);
 }
 .note {
-  border-left: 2px solid var(--stop);
   background: var(--stop-soft);
   padding: 14px 18px;
   margin: 26px 0;
-  border-radius: 0 3px 3px 0;
+  border-radius: 3px;
   font-size: 14.5px;
   color: var(--ink-2);
 }
@@ -1174,14 +1220,12 @@ a.link-button {
   color: var(--stop);
 }
 .note.calm {
-  border-left-color: var(--main);
   background: var(--main-soft);
 }
 .note.calm strong {
-  color: var(--main);
+  color: var(--main-deep);
 }
 .note.loop {
-  border-left-color: var(--loop);
   background: var(--loop-soft);
 }
 .note.loop strong {
@@ -1472,7 +1516,7 @@ a.link-button {
 .copy:hover,
 .copy.done {
   background: var(--main);
-  color: #fff;
+  color: var(--on-main);
 }
 .inline-form {
   display: flex;
@@ -1767,12 +1811,12 @@ a.link-button {
 .theme-pick[aria-pressed="true"] {
   background: var(--main-soft);
   border-color: var(--main);
-  color: var(--main);
+  color: var(--main-deep);
 }
 .theme-pick[aria-pressed="true"]::before {
   content: "\2713";
   content: "\2713" / "";
-  color: var(--main);
+  color: var(--main-deep);
 }
 
 .star-compose {
@@ -2447,10 +2491,11 @@ a.link-button {
   .stop.is-active {
     border-color: var(--main);
     background: var(--main);
-    color: #fff;
+    color: var(--on-main);
   }
   .stop.is-active .code {
-    color: rgba(255, 255, 255, 0.75);
+    color: inherit;
+    opacity: 0.75;
   }
   .stop.is-loop.is-active {
     border-color: var(--loop);
@@ -2628,7 +2673,7 @@ a.link-button {
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--main);
+  color: var(--main-deep);
   background: var(--main-soft);
   border-radius: 2px;
   padding: 1px 6px;
@@ -2676,7 +2721,7 @@ a.link-button {
   background: var(--surface);
   border: 1px solid var(--main);
   border-radius: 3px;
-  box-shadow: 0 10px 30px -18px rgba(15, 26, 28, 0.45);
+  box-shadow: 0 10px 30px -18px rgba(27, 23, 20, 0.45);
   animation: rise 0.25s var(--ease) both;
 }
 .picker-head {
@@ -2864,7 +2909,7 @@ a.primary-button {
   letter-spacing: 0.06em;
   color: var(--ink-2);
   border: 1px solid var(--rule);
-  border-radius: 999px;
+  border-radius: 2px;
   padding: 1px 9px;
 }
 .flow-tag.writes {
@@ -2966,7 +3011,7 @@ a.primary-button {
 }
 .ss-pill.ready {
   background: var(--main-soft);
-  color: var(--main);
+  color: var(--main-deep);
 }
 .ss-pill.needs {
   background: #f8e7b9;
@@ -3163,8 +3208,8 @@ a.primary-button {
 .brief-chip {
   font-size: 13.5px;
   background: var(--main-soft);
-  color: var(--main);
-  border-radius: 999px;
+  color: var(--main-deep);
+  border-radius: 2px;
   padding: 2px 10px;
 }
 .brief-chip.outline {
@@ -3204,7 +3249,6 @@ a.primary-button {
   color: var(--ink-2);
 }
 .note.warn-soft {
-  border-left-color: #c9a24a;
   background: #fdf6e3;
 }
 .note.warn-soft strong {
@@ -3709,7 +3753,7 @@ a.primary-button {
   align-items: center;
   padding: 12px;
   margin-bottom: 26px;
-  border-radius: 6px;
+  border-radius: 3px;
   background: var(--surface);
   border: 1px solid var(--rule);
   color: var(--ink);
@@ -3726,7 +3770,7 @@ a.primary-button {
   height: 40px;
   border-radius: 50%;
   background: var(--main);
-  color: #fff;
+  color: var(--on-main);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3791,10 +3835,10 @@ a.primary-button {
   font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #fff;
+  color: var(--on-main);
   background: var(--main);
   padding: 2px 6px;
-  border-radius: 3px;
+  border-radius: 2px;
   white-space: nowrap;
 }
 .gate-mark.is-done span {
@@ -3844,7 +3888,7 @@ a.primary-button {
 .home-fact {
   background: var(--surface);
   border: 1px solid var(--rule);
-  border-radius: 6px;
+  border-radius: 3px;
   padding: 10px 14px;
   min-width: 160px;
   display: flex;
@@ -3889,7 +3933,7 @@ a.primary-button {
 /* suggestion to move on */
 .nudge {
   background: var(--main-soft);
-  border-radius: 8px;
+  border-radius: 3px;
   padding: 14px 18px;
   display: flex;
   flex-wrap: wrap;
@@ -3915,9 +3959,9 @@ a.primary-button {
 
 /* next step: the one dark card on the page */
 .next-card {
-  background: #0f2a2a;
+  background: var(--night);
   color: #fff;
-  border-radius: 10px;
+  border-radius: 3px;
   padding: 28px 30px;
   display: flex;
   flex-wrap: wrap;
@@ -3935,7 +3979,7 @@ a.primary-button {
   font-size: 10.5px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #9fd3cc;
+  color: var(--night-accent);
 }
 .next-title {
   margin: 0;
@@ -3947,7 +3991,7 @@ a.primary-button {
 }
 .next-body {
   margin: 0;
-  color: #d3e3e1;
+  color: var(--night-ink);
   max-width: 54ch;
 }
 .next-actions {
@@ -3970,9 +4014,9 @@ a.primary-button {
 .next-cta {
   display: inline-block;
   background: #fff;
-  color: #0f2a2a;
+  color: var(--night);
   border: 0;
-  border-radius: 4px;
+  border-radius: 2px;
   padding: 13px 20px;
   font-family: var(--mono);
   font-size: 11px;
@@ -3983,17 +4027,17 @@ a.primary-button {
   cursor: pointer;
 }
 .next-cta:hover {
-  background: #dff1ee;
+  background: #fbede4;
 }
 a.next-alt {
-  color: #cfe7e3;
+  color: var(--night-soft);
   font-size: 14px;
 }
 .next-checks {
   flex: 1 1 260px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 8px;
+  border-radius: 3px;
   padding: 18px 20px;
   display: flex;
   flex-direction: column;
@@ -4001,7 +4045,7 @@ a.next-alt {
 }
 .next-checks-title {
   font-size: 13px;
-  color: #cfe7e3;
+  color: var(--night-soft);
 }
 .next-checks ul {
   list-style: none;
@@ -4027,12 +4071,12 @@ a.next-alt {
   border: 2px solid rgba(255, 255, 255, 0.45);
 }
 .next-check.done .next-check-mark {
-  background: #6fc3b8;
-  border-color: #6fc3b8;
+  background: var(--night-signal);
+  border-color: var(--night-signal);
 }
 .next-check.part .next-check-mark {
-  border-color: #6fc3b8;
-  background: linear-gradient(90deg, #6fc3b8 50%, transparent 50%);
+  border-color: var(--night-signal);
+  background: linear-gradient(90deg, var(--night-signal) 50%, transparent 50%);
 }
 .next-check.self .next-check-mark {
   border-style: dashed;
@@ -4043,7 +4087,7 @@ a.next-alt {
 .next-check-detail {
   font-family: var(--mono);
   font-size: 11px;
-  color: #9fd3cc;
+  color: var(--night-accent);
   white-space: nowrap;
 }
 .next-bar {
@@ -4056,7 +4100,7 @@ a.next-alt {
 .next-bar span {
   display: block;
   height: 100%;
-  background: #6fc3b8;
+  background: var(--night-signal);
   border-radius: 3px;
 }
 
@@ -4074,7 +4118,7 @@ a.next-alt {
   box-sizing: border-box;
   background: var(--surface);
   border: 1px solid var(--rule);
-  border-radius: 8px;
+  border-radius: 3px;
   padding: 16px;
   color: var(--ink);
   text-decoration: none;
@@ -4107,7 +4151,7 @@ a.next-alt {
   background: linear-gradient(90deg, var(--main) 50%, transparent 50%);
 }
 .material-dot.none {
-  border: 2px solid #a9b6b4;
+  border: 2px solid var(--ink-4);
 }
 .material-title {
   font-weight: 600;
@@ -4122,7 +4166,7 @@ a.next-alt {
 .week-strip {
   background: var(--surface);
   border: 1px solid var(--rule);
-  border-radius: 8px;
+  border-radius: 3px;
   padding: 18px 20px;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
@@ -4168,7 +4212,7 @@ a.next-alt {
   width: 100%;
   min-height: 54px;
   padding: 13px 18px;
-  border-radius: 8px;
+  border-radius: 3px;
   background: var(--surface);
   border: 1px solid var(--rule);
   color: var(--ink);
@@ -4188,7 +4232,7 @@ a.next-alt {
   height: 18px;
   border-radius: 50%;
   box-sizing: border-box;
-  border: 2px solid #a9b6b4;
+  border: 2px solid var(--ink-4);
   background: var(--surface);
 }
 .where-line.on .where-radio {
@@ -4226,7 +4270,7 @@ a.next-alt {
   align-items: baseline;
   min-height: 44px;
   padding: 10px 14px;
-  border-radius: 4px;
+  border-radius: 2px;
   background: var(--surface);
   border: 1px solid var(--rule);
   color: var(--ink);
@@ -4238,7 +4282,7 @@ a.next-alt {
 .where-chip.on {
   background: var(--main);
   border-color: var(--main);
-  color: #fff;
+  color: var(--on-main);
 }
 .where-chip-code {
   font-family: var(--mono);

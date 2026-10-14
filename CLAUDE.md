@@ -176,6 +176,19 @@ https://claude.ai/code/artifact/ec5dc14b-50cc-4241-945a-872c330beb3e
   card marks earlier phases done and the current one "You are here".
   **No per-job or per-round tracking** (Michael's call, to stay distinct from
   application trackers like Teal); Phase 05's next step stays general.
+- **Signal palette and Route wordmark** (2026-10-13): the teal palette was
+  too close to Teal, a direct competitor, so the brand moved to Signal: rust
+  `--main` (#b8470e) for proceed and the brand, blue `--loop`, oxblood
+  `--stop`, warm paper and inks. The tokens in globals.css match the Webflow
+  site's variables and the Yuhpp design system, with a dark-mode set of their
+  own. Rules that came with it: `--ink-3` is safe for small text and `--ink-4`
+  is for dots and strokes only; text on a `--main` fill uses `--on-main`; rust
+  text on `--main-soft` uses `--main-deep` (plain `--main` is under 4.5:1
+  there); corners are 2px for controls and tags, 3px for cards and panels, 6px
+  only for frames around media, round only for dots, never pills; notes are
+  flat tinted blocks with no side stripe. The masthead draws the Route wordmark
+  (`Masthead.tsx`, colored by the `.wm-*` classes), and `src/app/icon.svg` and
+  `apple-icon.png` are the tab and home screen icons.
 - **The route map is code** (`src/lib/route-map.ts`): rail stops, phase copy
   from the guide, and which prompts sit in each phase, listed by sheet name.
   A renamed prompt drops off its phase page until the name is updated there.
