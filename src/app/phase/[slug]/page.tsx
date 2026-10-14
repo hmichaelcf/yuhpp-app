@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import AppShell from "../../components/AppShell";
 import PromptCards, { catalogMap } from "../../components/PromptCards";
 import ResumePanel from "../../components/ResumePanel";
+import ResumeStepCard from "../../components/ResumeStepCard";
 import Rich from "../../components/Rich";
 import SearchBriefPanel from "../../components/SearchBriefPanel";
 import { isAdmin } from "@/lib/admin";
@@ -88,7 +89,7 @@ export default async function PhasePage({ params }: { params: Promise<{ slug: st
 
   // Phases 02 and 03 show the member's resume and search brief.
   const needs = new Set(phase.blocks.map((b) => b.t));
-  const state = needs.has("resume") || needs.has("brief") ? await resumeState(DB, member.id, member.email) : null;
+  const state = needs.has("resume") || needs.has("resume-step") || needs.has("brief") ? await resumeState(DB, member.id, member.email) : null;
   const [brief, companies] = needs.has("brief") && state
     ? await Promise.all([
         loadBrief(DB, member.id, settings, {
@@ -142,6 +143,8 @@ export default async function PhasePage({ params }: { params: Promise<{ slug: st
         return state ? (
           <ResumePanel key={i} state={state} bulletMax={settings.number("bullet_max_chars", 75)} />
         ) : null;
+      case "resume-step":
+        return state ? <ResumeStepCard key={i} state={state} num={b.num} /> : null;
       case "brief":
         return state && brief ? <SearchBriefPanel key={i} brief={brief} companies={companies} state={state} /> : null;
       case "checklist":

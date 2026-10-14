@@ -4372,3 +4372,68 @@ a.next-alt {
     padding-left: 32px;
   }
 }
+
+/* The message right after a save in a run, with a link to see the change. */
+.yb-saved {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--main-soft);
+  border-top: 1px solid var(--rule);
+  animation: rise 0.3s var(--ease) both;
+}
+.yb-saved .yb-check {
+  flex: none;
+  margin-top: 3px;
+}
+.yb-saved a {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.md .yb .yb-saved {
+  margin: 0;
+}
+
+/* Your resume, listed under Positioning on the menu. */
+.stop.is-sub {
+  margin: -2px 0 2px 14px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  font-size: 13.5px;
+}
+.stop.is-sub .dot {
+  left: -38px;
+  top: 10px;
+  width: 8px;
+  height: 8px;
+}
+.stop.is-sub::before {
+  content: "";
+  position: absolute;
+  left: -32px;
+  top: 14px;
+  width: 26px;
+  border-top: 1px solid var(--rule);
+}
+@media (max-width: 900px) {
+  .stop.is-sub {
+    margin: 0;
+    padding: 7px 12px;
+    font-size: 14px;
+  }
+  .stop.is-sub::before {
+    display: none;
+  }
+}
+
+/* "Get your resume" continues the numbered list of resume steps above it. */
+.cards.resume-step {
+  margin-top: -2px;
+}
+.card .start-run a.primary-button {
+  white-space: nowrap;
+}
