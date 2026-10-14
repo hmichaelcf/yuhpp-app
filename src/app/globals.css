@@ -181,10 +181,11 @@ a {
 
 .section-label {
   font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.18em;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--ink-3);
+  color: var(--ink-2);
   margin: 0 0 12px;
   padding-bottom: 9px;
   border-bottom: 1px solid var(--rule);
@@ -3919,8 +3920,8 @@ a.primary-button {
   margin: 0;
   font-family: var(--mono);
   font-weight: 500;
-  font-size: 10.5px;
-  letter-spacing: 0.18em;
+  font-size: 12px;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ink-2);
 }
