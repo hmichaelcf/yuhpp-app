@@ -4437,3 +4437,236 @@ a.next-alt {
 .card .start-run a.primary-button {
   white-space: nowrap;
 }
+
+/* ---------- admin insights (/app/admin/insights) ---------- */
+.page.ins {
+  max-width: 1040px;
+}
+.ins-meta a,
+.ins a.ins-email {
+  color: var(--main-deep);
+}
+.ins-note {
+  background: var(--main-soft);
+  color: var(--main-deep);
+  border-radius: 3px;
+  padding: 10px 14px;
+  font-size: 14.5px;
+  margin: 0 0 32px;
+  max-width: 64ch;
+}
+.ins-stats {
+  margin-bottom: 16px;
+}
+.ins-stat-note {
+  font-size: 12.5px;
+  color: var(--ink-3);
+  margin-top: 4px;
+}
+.ins-charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.ins-chart {
+  margin: 0;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 14px 16px 10px;
+}
+.ins-chart-title {
+  font-size: 14px;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.ins-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.ins-grid {
+  stroke: var(--rule);
+  stroke-width: 1;
+}
+.ins-base {
+  stroke: var(--ink-4);
+  stroke-width: 1;
+}
+.ins-axis {
+  font-family: var(--mono);
+  font-size: 10px;
+  fill: var(--ink-3);
+}
+.ins-bar {
+  fill: var(--main);
+}
+.ins-hit {
+  fill: transparent;
+}
+.ins-col:hover .ins-hit {
+  fill: var(--main-soft);
+  opacity: 0.6;
+}
+.ins-meters {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ins-meter {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 128px;
+  gap: 16px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.ins-meter-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.ins-meter-label {
+  color: var(--ink);
+  font-size: 14.5px;
+}
+.ins-meter-detail {
+  color: var(--ink-3);
+  font-size: 12.5px;
+}
+.ins-meter-track {
+  height: 8px;
+  background: var(--surface-sunk);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.ins-meter-fill {
+  height: 100%;
+  background: var(--main);
+}
+.ins-meter.is-small .ins-meter-fill {
+  background: var(--ink-4);
+}
+.ins-meter-value {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-3);
+  text-align: right;
+  white-space: nowrap;
+}
+.ins-meter-value strong {
+  color: var(--ink);
+  font-weight: 500;
+  margin-right: 6px;
+}
+.ins-scroll {
+  overflow-x: auto;
+  margin-bottom: 12px;
+}
+.ins-num td,
+.ins-num th,
+.ins-rates td,
+.ins-rates th {
+  white-space: nowrap;
+}
+.ins-num td:not(:first-child),
+.ins-rates td:not(:first-child) {
+  font-family: var(--mono);
+  font-size: 12.5px;
+}
+.ins-rates td:first-child {
+  white-space: normal;
+}
+.ins-members td:first-child {
+  white-space: normal;
+  min-width: 180px;
+}
+.ins-rates {
+  margin-bottom: 12px;
+}
+.ins-rates tr.is-small td {
+  color: var(--ink-3);
+}
+.ins-cohort td.ins-cell {
+  font-family: var(--mono);
+  font-size: 12px;
+  text-align: center;
+  padding: 8px 6px;
+  border: 2px solid var(--paper);
+  border-radius: 3px;
+  color: var(--ink);
+}
+.ins-cohort th:nth-child(n + 3) {
+  text-align: center;
+  padding-right: 0;
+}
+.ins-cell.is-empty {
+  background: transparent;
+}
+.ins-cell.s0 {
+  background: var(--surface-sunk);
+  color: var(--ink-3);
+}
+.ins-cell.s1 {
+  background: var(--main-soft);
+  color: var(--main-deep);
+}
+.ins-cell.s2 {
+  background: color-mix(in oklab, var(--main) 45%, var(--main-soft));
+  color: var(--main-deep);
+}
+.ins-cell.s3 {
+  background: color-mix(in oklab, var(--main) 75%, var(--main-soft));
+  color: var(--on-main);
+}
+.ins-cell.s4 {
+  background: var(--main);
+  color: var(--on-main);
+}
+.ins-details {
+  margin: 8px 0 0;
+}
+.ins-details summary {
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--ink-2);
+  margin-bottom: 10px;
+}
+.ins-list {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--ink-2);
+  font-size: 14px;
+  columns: 2;
+}
+.ins-email {
+  font-size: 12.5px;
+}
+.ins-tag {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: 1px 5px;
+  margin-left: 8px;
+}
+@media (max-width: 700px) {
+  .ins-meter {
+    grid-template-columns: 1fr 112px;
+  }
+  .ins-meter-track {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .ins-list {
+    columns: 1;
+  }
+}

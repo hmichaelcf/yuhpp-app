@@ -45,6 +45,9 @@ https://claude.ai/code/artifact/ec5dc14b-50cc-4241-945a-872c330beb3e
   menu opens with a Home card (initials, name, current phase) instead of a
   Start stop. Home shows one next step for the member's phase, their four
   materials, this week's numbers, and recent runs. See "Home by phase" below.
+- **Insights page (done in code, 2026-10-15, branch `insights-dashboard`):**
+  /app/admin/insights, admins only, linked from /app/admin. See "Insights"
+  below.
 - Later phases: onboarding, application loop, interview loop, weekly review and
   practice, beta launch. See the build spec.
 
@@ -206,6 +209,26 @@ https://claude.ai/code/artifact/ec5dc14b-50cc-4241-945a-872c330beb3e
   flat tinted blocks with no side stripe. The masthead draws the Route wordmark
   (`Masthead.tsx`, colored by the `.wm-*` classes), and `src/app/icon.svg` and
   `apple-icon.png` are the tab and home screen icons.
+- **Insights** (2026-10-15): the founder dashboard lives in the app, at
+  /app/admin/insights, because the member and activity data is in the app's
+  SQLite and Webflow Analyze is not on the plan. `src/lib/insights.ts` builds
+  it: headline numbers, weekly new and active members and runs (12 weeks),
+  activation milestones, retention by signup week, phase mix, prompt use (by
+  prompt and by route place, with prompts never run), workspace depth, search
+  outcomes from weekly logs, API spend, people to nudge, and a member table.
+  It reads across all members (the rule 6 exception, said in its comments) and
+  only counts rows and reads timestamps; it never shows message or resume text.
+  - **Active** means any timestamped action: a prompt turn, a workspace save,
+    a weekly log, a phase pick, account creation, or the latest sign-in
+    (`members.last_seen_at` keeps only the latest). Read back 120 days.
+  - **Admins are left out** of member numbers (`is_admin` or `ADMIN_EMAILS`)
+    unless the page is opened with `?admins=1`; spend always counts everyone.
+  - **D1 allows only a few terms in a compound SELECT** (`UNION`), so the
+    activity read is one query per source table (`ACTIVITY_SOURCES`), merged in
+    code. Add a source there when a new member-owned table gets timestamps.
+  - Shares whose group is under `metric_min_sample` are gray, like the weekly
+    review. Charts are server-drawn SVG (`InsightBars`), one measure each,
+    with the numbers also in a table.
 - **The route map is code** (`src/lib/route-map.ts`): rail stops, phase copy
   from the guide, and which prompts sit in each phase, listed by sheet name.
   A renamed prompt drops off its phase page until the name is updated there.
@@ -338,6 +361,8 @@ src/app/                pages and API routes (App Router)
   login/page.tsx        /app/login: sign in and create account
   status/page.tsx       /app/status: configuration and storage checks
   admin/page.tsx        /app/admin: usage, prompt sync, settings (admins only)
+  admin/insights/       /app/admin/insights: members, activity, retention,
+                        outcomes, spend (admins only)
   prompts/page.tsx      /app/prompts: pick a prompt and start a run
   profile/page.tsx      /app/profile: name, where you are, and the saved resume
   resume/page.tsx       /app/resume: the resume in the template; fill in, publish
@@ -360,7 +385,7 @@ src/app/                pages and API routes (App Router)
                         StoryBank, SavedSearches, WeeklyForm, NameForm,
                         CopyButton, AuthForm, SignOutButton, PromptUpload,
                         StartRunButton, ChatView, ResumeForm, PhasePicker,
-                        NudgeBar
+                        NudgeBar, InsightBars
   globals.css           design tokens shared with the public guide
 src/lib/
   config.ts             the only place secrets are read (server only)
@@ -396,6 +421,7 @@ src/lib/
   keepalive.ts          streams a slow JSON response past the 20-second limit
   months.ts             MM/YYYY work dates: typing mask, checks, display
   weekly.ts             weekly logs and progress metrics (server only)
+  insights.ts           the Insights page's numbers, across members (server only)
   weekly-fields.ts      the weekly counts and the weekly number line
   api.ts, client-api.ts small helpers for the workspace API routes
 migrations/             numbered SQL migrations, applied on deploy
