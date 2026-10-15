@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Masthead from "../components/Masthead";
 import PromptUpload from "../components/PromptUpload";
 import { requireAdminPage } from "@/lib/admin";
@@ -66,6 +67,9 @@ export default async function AdminPage() {
         </h1>
         <p className="lede">
           Sync the prompt library, watch usage and cost, and see the settings the gates run on.
+        </p>
+        <p className="aside">
+          <Link href="/admin/insights">Open Insights</Link> for members, activity, retention, outcomes, and spend.
         </p>
 
         <section className="admin-block">

@@ -10,6 +10,13 @@ JSON. `"status": "ready"` means the app is deployed, configured, and its
 database and session store are working. Anything else, and the status page
 shows which check failed.
 
+## See how members are using Yuhpp
+
+Sign in at yuhpp.com/app, click **Admin**, then **Open Insights** (or go to
+yuhpp.com/app/admin/insights). It reads the live database every time it
+loads. Your own admin account is left out of member numbers; add `?admins=1`
+to the address to include it. Spend always counts every account.
+
 ## Sync the prompt library after editing the sheet
 
 1. Open the `yuhpp_prompts` Google Sheet and choose
